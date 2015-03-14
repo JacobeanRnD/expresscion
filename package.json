@@ -1,0 +1,19 @@
+{
+  "name": "swagger-client",
+  "description": "Wordnik node.js server generator",
+  "version": "1.0.0",
+  "homepage": "",
+  "main": "./main.js",
+  "engines": {
+    "node": ">= 0.8.x"
+  },
+  "dependencies": {
+    "connect": ">= 1.8.x",
+    "cors": "2.1.1",
+    "express": "3.x",
+    "libxmljs": "^0.13.0",
+    "scxml": "git://github.com/jbeard4/SCION.git#dd8219316a267ea0e67aaca9a00510407cb14812",
+    "swagger-node-express": ">= 2.0.x",
+    "uuid": "^2.0.1"
+  }
+}
