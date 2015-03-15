@@ -146,6 +146,7 @@ module.exports.createNamedInstance = function(req, res){
 };
 
 module.exports.sendEvent = function(req, res){
+  console.time('event');
 
   var chartName = req.param('StateChartName'),
     instanceId = chartName + '/' + req.param('InstanceId');
@@ -153,10 +154,14 @@ module.exports.sendEvent = function(req, res){
   var sc = instances[instanceId];
 
   var event = JSON.parse(req.body);
-  var nextConfiguration = sc.gen(event); 
+  
+  console.log('event started', event);
 
+  var nextConfiguration = sc.gen(event); 
   res.setHeader('X-Configuration',JSON.stringify(nextConfiguration));
 
+  console.timeEnd('event');
+  console.log('event ended', event);
   res.send(200);
 };
 
