@@ -36,6 +36,10 @@ app.use(function(req, res, next) {
 app.use(express.urlencoded());
 app.use(cors(corsOptions));
 
+app.set('views', path.join(__dirname, './views'));
+app.engine('html', require('ejs').renderFile);
+app.use(express.static(path.join(__dirname, './public')));
+
 var subpath = express();
 
 app.use("/api/v1", subpath);
@@ -75,6 +79,8 @@ swagger.configure("http://localhost:8002/api/v1", "0.1");
 app.get('/smaas.json', function (req, res) {
   res.json(smaasJSON);
 });
+
+app.get('/api/v1/:StateChartName/:InstanceId/_viz', provider.viz);
 
 //  start the server
 app.listen(8002);
