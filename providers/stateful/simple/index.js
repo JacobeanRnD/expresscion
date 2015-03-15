@@ -118,14 +118,14 @@ module.exports.getInstances = function(req, res){
 module.exports.getStatechartDefinitionChanges = function(req, res){
   var chartName = req.param('StateChartName');
 
-  var statechartDefinitionSubscriptions = 
+  var statechartDefinitionSubscription = 
     statechartDefinitionSubscriptions[chartName] = 
       statechartDefinitionSubscriptions[chartName] || [];
-  statechartDefinitionSubscriptions.push(res);
+  statechartDefinitionSubscription.push(res);
 
   sse.initStream(req, res, function(){
     statechartDefinitionSubscriptions.splice(
-      statechartDefinitionSubscriptions.indexOf(res), 1);
+      statechartDefinitionSubscription.indexOf(res), 1);
   });
 };
 
@@ -196,7 +196,8 @@ module.exports.getInstanceChanges = function(req, res){
       //TODO: spec this out
     }
   };
-  sc.registerListener(listener);
+
+  instance.registerListener(listener);
 
   sse.initStream(req, res, function(){
     instance.unregisterListener(listener);
@@ -217,7 +218,7 @@ module.exports.viz = function (req, res) {
 function broadcastDefinitionChange(chartName, scxmlString){
   var statechartDefinitionSubscription = statechartDefinitionSubscriptions[chartName];
   if(statechartDefinitionSubscription) {
-    statechartDefinitionSubscriptions.forEach(function(response) {
+    statechartDefinitionSubscription.forEach(function(response) {
       response.write('event: onChange\n');
       response.write('data: ' + scxmlString + '\n\n');
     });
