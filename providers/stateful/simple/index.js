@@ -124,7 +124,7 @@ module.exports.getStatechartDefinitionChanges = function(req, res){
   statechartDefinitionSubscription.push(res);
 
   sse.initStream(req, res, function(){
-    statechartDefinitionSubscriptions.splice(
+    statechartDefinitionSubscription.splice(
       statechartDefinitionSubscription.indexOf(res), 1);
   });
 };
