@@ -72,7 +72,7 @@ module.exports.getStatechartDefinition = function(req, res){
 
   var model = definitions[chartName];
   if(model){
-      res.json(model);
+      res.send(model);
   }else {
       res.send(404);
   }
@@ -202,6 +202,17 @@ module.exports.getInstanceChanges = function(req, res){
     instance.unregisterListener(listener);
   });
 };
+
+module.exports.viz = function (req, res) {
+  var chartName = req.param('StateChartName'),
+    instanceId = chartName + '/' + req.param('InstanceId');
+
+  var instance = instances[instanceId];
+
+  if(!instance) return res.send(404);
+
+  res.render('viz.html');
+}
 
 function broadcastDefinitionChange(chartName, scxmlString){
   var statechartDefinitionSubscription = statechartDefinitionSubscriptions[chartName];
