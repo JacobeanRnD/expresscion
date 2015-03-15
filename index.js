@@ -2,11 +2,14 @@ var express = require("express")
  , url = require("url")
  , cors = require("cors")
  , path = require('path')
- , smaasJSON = require('../smaas.json')
+ , smaasJSON = require('../../smaas.json')
  , app = express()
  , swagger = require("swagger-node-express")
  , db = false
- , provider = require('./providers/in-memory');
+//TODO: parameterize this so that it can be specified on the CLI
+//TODO: break out submodules so that they are independent node_modules
+//TODO: connectors API too
+ , provider = require('./providers/stateful/simple');   
 
 smaasJSON.host = process.env.SMAAS_HOST_URL || 'localhost:8002';
 
