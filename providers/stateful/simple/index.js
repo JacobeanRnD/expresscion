@@ -146,6 +146,7 @@ module.exports.createNamedInstance = function(req, res){
 };
 
 module.exports.sendEvent = function(req, res){
+  console.log('event started1', event);
   console.time('event');
 
   var chartName = req.param('StateChartName'),
