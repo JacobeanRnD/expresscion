@@ -5,7 +5,8 @@ $(function() {
 
   var vizArea = $('#viz-area'),
     layout,
-    source;
+    eventChangeSource,
+    scxmlChangeSource;
 
   getScxml();
 
@@ -78,18 +79,22 @@ $(function() {
 
         layout.fit();
 
-        if (!source) {
-          source = new EventSource('./_changes');
+        if (!eventChangeSource) {
+          eventChangeSource = new EventSource('./_changes');
 
-          source.addEventListener('onEntry', function(e) {
+          eventChangeSource.addEventListener('onEntry', function(e) {
             highlight('onEntry', e.data);
           }, false);
 
-          source.addEventListener('onExit', function(e) {
+          eventChangeSource.addEventListener('onExit', function(e) {
             highlight('onExit', e.data);
           }, false);
+        }
 
-          source.addEventListener('onscxmlchanged', function() {
+        if(!scxmlChangeSource) {
+          scxmlChangeSource = new EventSource('../_changes');
+
+          scxmlChangeSource.addEventListener('onChange', function(e) {
             getScxml();
           }, false);
         }
