@@ -1,30 +1,15 @@
-var express = require("express")
- , url = require("url")
- , cors = require("cors")
- , path = require('path')
- , smaasJSON = require('../../smaas.json')
- , app = express()
- , swagger = require("swagger-node-express")
- , db = false
-//TODO: parameterize this so that it can be specified on the CLI
-//TODO: break out submodules so that they are independent node_modules
-//TODO: connectors API too
- , provider = require('./providers/stateful/simple');   
+var express = require("express"),
+  url = require("url"),
+  cors = require("cors"),
+  path = require('path'),
+  smaasJSON = require('../../smaas.json'),
+  app = express(),
+  provider = require('./providers/stateful/simple'),
+  app = express();
 
-smaasJSON.host = process.env.SMAAS_HOST_URL || 'localhost:8002';
+smaasJSON.host = process.env.SMAAS_HOST_URL || 'localhost:8002',
 
-var corsOptions = {
-  credentials: true,
-  origin: function(origin,callback) {
-    if(origin===undefined) {
-      callback(null,false);
-    } else {
-      callback(null,true);
-    }
-  }
-};
-
-//buffer the body
+// buffer the body
 app.use(function(req, res, next) {
   req.body = '';
   req.on('data', function(data) {
@@ -33,54 +18,51 @@ app.use(function(req, res, next) {
   return req.on('end', next);
 });
 
-app.use(express.urlencoded());
-app.use(cors(corsOptions));
-
 app.set('views', path.join(__dirname, './views'));
 app.engine('html', require('ejs').renderFile);
 app.use(express.static(path.join(__dirname, './public')));
-
-var subpath = express();
-
-app.use("/api/v1", subpath);
-
-swagger.setAppHandler(subpath);
-
-swagger.configureSwaggerPaths("", "api-docs", "")
-
-var models = require("./swagger-generated/app/models.js");
-
-var DefaultApi = require("./swagger-generated/app/apis/DefaultApi.js");
-
-//iterate through keys of DefaultApi and replace actions
-Object.keys(DefaultApi).forEach(function(key){
-  DefaultApi[key].action = provider[key];
-});
-
-swagger.addModels(models)
-  .addPOST(DefaultApi.createStatechartDefinition)
-  .addGET(DefaultApi.getStatechartDefinitions)
-  .addGET(DefaultApi.getStatechartDefinition)
-  .addPUT(DefaultApi.createOrUpdateStatechartDefinition)
-  .addPOST(DefaultApi.createInstance)
-  .addDELETE(DefaultApi.deleteStatechartDefinition)
-  .addGET(DefaultApi.getInstances)
-  .addGET(DefaultApi.getStatechartDefinitionChanges)
-  .addGET(DefaultApi.getInstance)
-  .addPUT(DefaultApi.createNamedInstance)
-  .addPOST(DefaultApi.sendEvent)
-  .addDELETE(DefaultApi.deleteInstance)
-  .addGET(DefaultApi.getInstanceChanges)
-  ;
-
-// configures the app
-swagger.configure("http://localhost:8002/api/v1", "0.1");
 
 app.get('/smaas.json', function (req, res) {
   res.json(smaasJSON);
 });
 
 app.get('/api/v1/:StateChartName/:InstanceId/_viz', provider.viz);
+app.get('/api/v1/:StateChartName/_viz', function () {
+  res.send('asd');
+});
+
+Object.keys(smaasJSON.paths).forEach(function(endpointPath){
+  var endpoint = smaasJSON.paths[endpointPath];
+  var actualPath = smaasJSON.basePath + endpointPath.replace(/{/g, ':').replace(/}/g, '');
+
+debugger;
+
+  Object.keys(endpoint).forEach(function(methodName){
+    var method = endpoint[methodName];
+
+    switch(methodName) {
+      case 'get': {
+        app.get(actualPath, provider[method.operationId]);
+        break;
+      }
+      case 'post': {
+        app.post(actualPath, provider[method.operationId]);
+        break;
+      }
+      case 'put': {
+        app.put(actualPath, provider[method.operationId]);
+        break;
+      }
+      case 'delete': {
+        app.delete(actualPath, provider[method.operationId]);
+        break;
+      }
+      default:{
+        console.log('Unsupported method name:', methodName);
+      }
+    }
+  });
+});
 
 //  start the server
 app.listen(8002);
