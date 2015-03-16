@@ -26,16 +26,12 @@ app.get('/smaas.json', function (req, res) {
   res.json(smaasJSON);
 });
 
-app.get('/api/v1/:StateChartName/:InstanceId/_viz', provider.viz);
-app.get('/api/v1/:StateChartName/_viz', function () {
-  res.send('asd');
-});
+app.get('/api/v1/:StateChartName/:InstanceId/_viz', provider.instanceViz);
+app.get('/api/v1/:StateChartName/_viz', provider.statechartViz);
 
 Object.keys(smaasJSON.paths).forEach(function(endpointPath){
   var endpoint = smaasJSON.paths[endpointPath];
   var actualPath = smaasJSON.basePath + endpointPath.replace(/{/g, ':').replace(/}/g, '');
-
-debugger;
 
   Object.keys(endpoint).forEach(function(methodName){
     var method = endpoint[methodName];
@@ -64,6 +60,5 @@ debugger;
   });
 });
 
-//  start the server
 app.listen(8002);
 

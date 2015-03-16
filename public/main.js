@@ -2,6 +2,14 @@
 
 $(function() {
   /* global alert,EventSource */
+  
+  var statechartUrl = '../';
+  var statechartChangesUrl = '../_changes';
+
+  if(vizType === 'statechart') {
+    statechartUrl = './';
+    statechartChangesUrl = './_changes';
+  }
 
   var vizArea = $('#viz-area'),
     layout,
@@ -13,7 +21,7 @@ $(function() {
   function getScxml() {
     $.ajax({
         type: 'GET',
-        url: '../',
+        url: statechartUrl,
         dataType: 'text'
       })
       .done(function(data, status, xhr) {
@@ -79,6 +87,18 @@ $(function() {
 
         layout.fit();
 
+        if(!scxmlChangeSource) {
+          scxmlChangeSource = new EventSource(statechartChangesUrl);
+
+          scxmlChangeSource.addEventListener('onChange', function(e) {
+            getScxml();
+          }, false);
+        }
+
+        if(vizType === 'statechart') {
+          return;
+        }
+
         if (!eventChangeSource) {
           eventChangeSource = new EventSource('./_changes');
 
@@ -88,14 +108,6 @@ $(function() {
 
           eventChangeSource.addEventListener('onExit', function(e) {
             highlight('onExit', e.data);
-          }, false);
-        }
-
-        if(!scxmlChangeSource) {
-          scxmlChangeSource = new EventSource('../_changes');
-
-          scxmlChangeSource.addEventListener('onChange', function(e) {
-            getScxml();
           }, false);
         }
 
