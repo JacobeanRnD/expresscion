@@ -10,6 +10,7 @@ var compiledDefinitions = {};
 var definitionToInstances = {};
 var instances = {};
 var statechartDefinitionSubscriptions = {};
+var events = {};
 
 function createStatechartDefinition(req,res,scName){
   validate(req, function(errors, scxmlDoc){
@@ -39,18 +40,33 @@ function createInstance(req, res, instanceId){
   //4. get the initial configuration and set the x-configuration header
   
   var chartName = req.param('StateChartName');
-  var model = compiledDefinitions[chartName];
-  var sc = new scxml.scion.Statechart(model);
-  var initialConfiguration = sc.start();
-
   instanceId = chartName  + '/' + (instanceId || uuid.v1());
+  var model = compiledDefinitions[chartName];
+  var instance = new scxml.scion.Statechart(model);
+  events[instanceId] = [];
+
+  var listener = {
+    onEntry : function(stateId){
+      events[instanceId].push({ name: 'onEntry', data: stateId });
+    },
+    onExit : function(stateId){
+      events[instanceId].push({ name: 'onExit', data: stateId });
+    },
+    onTransition : function(sourceStateId,targetStatesIds){
+      //TODO: spec this out
+    }
+  };
+
+  instance.registerListener(listener);
+
+  var initialConfiguration = instance.start();
 
   //update data stores
   var map = 
     definitionToInstances[chartName] = 
       definitionToInstances[chartName] || [];
   map.push(instanceId);
-  instances[instanceId] = sc;
+  instances[instanceId] = instance;
 
   res.setHeader('Location', instanceId);
   res.setHeader('X-Configuration',JSON.stringify(initialConfiguration));
@@ -226,6 +242,17 @@ module.exports.statechartViz = function (req, res) {
   res.render('viz.html', {
     type: 'statechart'
   });
+}
+
+module.exports.getEventLog = function (req, res) {
+  var chartName = req.param('StateChartName'),
+    instanceId = chartName + '/' + req.param('InstanceId');
+
+  var instance = instances[instanceId];
+
+  if(!instance) return res.send(404);
+
+  res.status(200).send(events[instanceId]);
 }
 
 function broadcastDefinitionChange(chartName, scxmlString){
