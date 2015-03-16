@@ -23,7 +23,7 @@ app.engine('html', require('ejs').renderFile);
 app.use(express.static(path.join(__dirname, './public')));
 
 app.get('/smaas.json', function (req, res) {
-  res.json(smaasJSON);
+  res.status(200).send(smaasJSON);
 });
 
 app.get('/api/v1/:StateChartName/:InstanceId/_viz', provider.instanceViz);
