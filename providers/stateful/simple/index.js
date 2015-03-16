@@ -15,7 +15,7 @@ var events = {};
 function createStatechartDefinition(req,res,scName){
   validate(req, function(errors, scxmlDoc){
 
-    if(errors) return res.send(400,{name : 'error.create', data : errors});
+    if(errors) return res.status(400).send({ name : 'error.create', data : errors });
 
     var scxmlString = req.body;
     scxml.documentStringToModel(null, scxmlString, function(err, model){
@@ -28,7 +28,7 @@ function createStatechartDefinition(req,res,scName){
       broadcastDefinitionChange(chartName, scxmlString);
 
       res.setHeader('Location', chartName);
-      res.send(201);
+      res.sendStatus(201);
     });
   });
 }
@@ -39,7 +39,7 @@ function createInstance(req, res, instanceId){
   //3. start statechart
   //4. get the initial configuration and set the x-configuration header
   
-  var chartName = req.param('StateChartName');
+  var chartName = req.params.StateChartName;
   instanceId = chartName  + '/' + (instanceId || uuid.v1());
   var model = compiledDefinitions[chartName];
   var instance = new scxml.scion.Statechart(model);
@@ -71,7 +71,7 @@ function createInstance(req, res, instanceId){
   res.setHeader('Location', instanceId);
   res.setHeader('X-Configuration',JSON.stringify(initialConfiguration));
 
-  res.send(201);
+  res.sendStatus(201);
 }
 
 module.exports.createStatechartDefinition = function(req, res){
@@ -84,18 +84,18 @@ module.exports.getStatechartDefinitions = function(req, res){
 
 module.exports.getStatechartDefinition = function(req, res){
   //1. fetch statechart definition
-  var chartName = req.param('StateChartName');
+  var chartName = req.params.StateChartName;
 
   var model = definitions[chartName];
   if(model){
-      res.send(model);
+      res.status(200).send(model);
   }else {
-      res.send(404);
+      res.sendStatus(404);
   }
 };
 
 module.exports.createOrUpdateStatechartDefinition = function(req, res){
-  createStatechartDefinition(req,res,req.param('StateChartName'));
+  createStatechartDefinition(req, res, req.params.StateChartName);
 };
 
 module.exports.createInstance = function(req, res){
@@ -103,7 +103,7 @@ module.exports.createInstance = function(req, res){
 };
 
 module.exports.deleteStatechartDefinition = function(req, res){
-  var chartName = req.param('StateChartName');
+  var chartName = req.params.StateChartName;
 
   var success = delete definitions[chartName];
   definitionToInstances[chartName].forEach(function(instanceId){
@@ -113,26 +113,26 @@ module.exports.deleteStatechartDefinition = function(req, res){
   delete definitionToInstances[chartName];
   
   if(success){
-    res.send(200);
+    res.sendStatus(200);
   }else{
-    res.send(404);
+    res.sendStatus(404);
   }
 };
 
 module.exports.getInstances = function(req, res){
-  var chartName = req.param('StateChartName');
+  var chartName = req.params.StateChartName;
   
   var instances = definitionToInstances[chartName];
 
   if(instances){
     res.json(instances);
   }else{
-    res.send(404);
+    res.sendStatus(404);
   }
 };
 
 module.exports.getStatechartDefinitionChanges = function(req, res){
-  var chartName = req.param('StateChartName');
+  var chartName = req.params.StateChartName;
 
   var statechartDefinitionSubscription = 
     statechartDefinitionSubscriptions[chartName] = 
@@ -146,24 +146,24 @@ module.exports.getStatechartDefinitionChanges = function(req, res){
 };
 
 module.exports.getInstance = function(req, res){
-  var chartName = req.param('StateChartName'),
-    instanceId = chartName + '/' + req.param('InstanceId');
+  var chartName = req.params.StateChartName,
+    instanceId = chartName + '/' + req.params.InstanceId;
 
   var sc = instances[instanceId];
   if(sc){
-      res.send(sc.getSnapshot());
+      res.status(200).send(sc.getSnapshot());
   }else {
-      res.send(404);
+      res.sendStatus(404);
   }
 };
 
 module.exports.createNamedInstance = function(req, res){
-  createInstance(req, res, req.param('InstanceId'));
+  createInstance(req, res, req.params.InstanceId);
 };
 
 module.exports.sendEvent = function(req, res){
-  var chartName = req.param('StateChartName'),
-    instanceId = chartName + '/' + req.param('InstanceId');
+  var chartName = req.params.StateChartName,
+    instanceId = chartName + '/' + req.params.InstanceId;
 
   var instance = instances[instanceId];
 
@@ -172,31 +172,31 @@ module.exports.sendEvent = function(req, res){
   var nextConfiguration = instance.gen(event); 
   res.setHeader('X-Configuration',JSON.stringify(nextConfiguration));
 
-  res.send(200);
+  res.sendStatus(200);
 };
 
 module.exports.deleteInstance = function(req, res){
-  var chartName = req.param('StateChartName'),
-    instanceId = chartName + '/' + req.param('InstanceId');
+  var chartName = req.params.StateChartName,
+    instanceId = chartName + '/' + req.params.InstanceId;
 
   var success = delete instances[instanceId];
   var arr = definitionToInstances[chartName];
   arr.splice(arr.indexOf(instanceId),1);
 
   if(success){
-    res.send(200);
+    res.sendStatus(200);
   }else{
-    res.send(404);
+    res.sendStatus(404);
   }
 };
 
 module.exports.getInstanceChanges = function(req, res){
-  var chartName = req.param('StateChartName'),
-    instanceId = chartName + '/' + req.param('InstanceId');
+  var chartName = req.params.StateChartName,
+    instanceId = chartName + '/' + req.params.InstanceId;
 
   var instance = instances[instanceId];
 
-  if(!instance) return res.send(404);
+  if(!instance) return res.sendStatus(404);
 
   var listener = {
     onEntry : function(stateId){
@@ -220,12 +220,12 @@ module.exports.getInstanceChanges = function(req, res){
 };
 
 module.exports.instanceViz = function (req, res) {
-  var chartName = req.param('StateChartName'),
-    instanceId = chartName + '/' + req.param('InstanceId');
+  var chartName = req.params.StateChartName,
+    instanceId = chartName + '/' + req.params.InstanceId;
 
   var instance = instances[instanceId];
 
-  if(!instance) return res.send(404);
+  if(!instance) return res.sendStatus(404);
 
   res.render('viz.html', {
     type: 'instance'
@@ -233,11 +233,11 @@ module.exports.instanceViz = function (req, res) {
 }
 
 module.exports.statechartViz = function (req, res) {
-  var chartName = req.param('StateChartName');
+  var chartName = req.params.StateChartName;
 
   var definition = definitions[chartName];
 
-  if(!definitions) return res.send(404);
+  if(!definitions) return res.sendStatus(404);
 
   res.render('viz.html', {
     type: 'statechart'
@@ -245,12 +245,12 @@ module.exports.statechartViz = function (req, res) {
 }
 
 module.exports.getEventLog = function (req, res) {
-  var chartName = req.param('StateChartName'),
-    instanceId = chartName + '/' + req.param('InstanceId');
+  var chartName = req.params.StateChartName,
+    instanceId = chartName + '/' + req.params.InstanceId;
 
   var instance = instances[instanceId];
 
-  if(!instance) return res.send(404);
+  if(!instance) return res.sendStatus(404);
 
   res.status(200).send(events[instanceId]);
 }
