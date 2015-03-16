@@ -203,7 +203,7 @@ module.exports.getInstanceChanges = function(req, res){
   });
 };
 
-module.exports.viz = function (req, res) {
+module.exports.instanceViz = function (req, res) {
   var chartName = req.param('StateChartName'),
     instanceId = chartName + '/' + req.param('InstanceId');
 
@@ -211,7 +211,21 @@ module.exports.viz = function (req, res) {
 
   if(!instance) return res.send(404);
 
-  res.render('viz.html');
+  res.render('viz.html', {
+    type: 'instance'
+  });
+}
+
+module.exports.statechartViz = function (req, res) {
+  var chartName = req.param('StateChartName');
+
+  var definition = definitions[chartName];
+
+  if(!definitions) return res.send(404);
+
+  res.render('viz.html', {
+    type: 'statechart'
+  });
 }
 
 function broadcastDefinitionChange(chartName, scxmlString){
