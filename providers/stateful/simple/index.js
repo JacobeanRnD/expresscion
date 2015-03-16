@@ -146,23 +146,16 @@ module.exports.createNamedInstance = function(req, res){
 };
 
 module.exports.sendEvent = function(req, res){
-  console.log('event started1', event);
-  console.time('event');
-
   var chartName = req.param('StateChartName'),
     instanceId = chartName + '/' + req.param('InstanceId');
 
-  var sc = instances[instanceId];
+  var instance = instances[instanceId];
 
   var event = JSON.parse(req.body);
-  
-  console.log('event started', event);
 
-  var nextConfiguration = sc.gen(event); 
+  var nextConfiguration = instance.gen(event); 
   res.setHeader('X-Configuration',JSON.stringify(nextConfiguration));
 
-  console.timeEnd('event');
-  console.log('event ended', event);
   res.send(200);
 };
 
