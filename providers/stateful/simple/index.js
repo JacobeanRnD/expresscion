@@ -42,6 +42,9 @@ function createInstance(req, res, instanceId){
   var chartName = req.params.StateChartName;
   instanceId = chartName  + '/' + (instanceId || uuid.v1());
   var model = compiledDefinitions[chartName];
+
+  if(!model) return res.sendStatus(404);
+
   var instance = new scxml.scion.Statechart(model);
   var initialConfiguration = instance.start();
 
@@ -71,11 +74,10 @@ module.exports.getStatechartDefinition = function(req, res){
   var chartName = req.params.StateChartName;
 
   var model = definitions[chartName];
-  if(model){
-      res.status(200).send(model);
-  }else {
-      res.sendStatus(404);
-  }
+  
+  if(!model) return res.sendStatus(404);
+
+  res.status(200).send(model);
 };
 
 module.exports.createOrUpdateStatechartDefinition = function(req, res){
@@ -105,18 +107,16 @@ module.exports.deleteStatechartDefinition = function(req, res){
 
 module.exports.getInstances = function(req, res){
   var chartName = req.params.StateChartName;
-  
-  var instances = definitionToInstances[chartName];
+    
+  if(!definitions[chartName]) return res.sendStatus(404);
 
-  if(instances){
-    res.json(instances);
-  }else{
-    res.sendStatus(404);
-  }
+  res.status(200).send(definitionToInstances[chartName]);
 };
 
 module.exports.getStatechartDefinitionChanges = function(req, res){
   var chartName = req.params.StateChartName;
+
+  if(!definitions[chartName]) return res.sendStatus(404);
 
   var statechartDefinitionSubscription = 
     statechartDefinitionSubscriptions[chartName] = 
@@ -225,9 +225,7 @@ module.exports.instanceViz = function (req, res) {
 module.exports.statechartViz = function (req, res) {
   var chartName = req.params.StateChartName;
 
-  var definition = definitions[chartName];
-
-  if(!definitions) return res.sendStatus(404);
+  if(!definitions[chartName]) return res.sendStatus(404);
 
   res.render('viz.html', {
     type: 'statechart'
