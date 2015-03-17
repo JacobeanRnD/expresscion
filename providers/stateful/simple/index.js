@@ -43,22 +43,6 @@ function createInstance(req, res, instanceId){
   instanceId = chartName  + '/' + (instanceId || uuid.v1());
   var model = compiledDefinitions[chartName];
   var instance = new scxml.scion.Statechart(model);
-  events[instanceId] = [];
-
-  var listener = {
-    onEntry : function(stateId){
-      events[instanceId].push({ name: 'onEntry', data: stateId });
-    },
-    onExit : function(stateId){
-      events[instanceId].push({ name: 'onExit', data: stateId });
-    },
-    onTransition : function(sourceStateId,targetStatesIds){
-      //TODO: spec this out
-    }
-  };
-
-  instance.registerListener(listener);
-
   var initialConfiguration = instance.start();
 
   //update data stores
@@ -149,12 +133,10 @@ module.exports.getInstance = function(req, res){
   var chartName = req.params.StateChartName,
     instanceId = chartName + '/' + req.params.InstanceId;
 
-  var sc = instances[instanceId];
-  if(sc){
-      res.status(200).send(sc.getSnapshot());
-  }else {
-      res.sendStatus(404);
-  }
+  var instance = instances[instanceId];
+  if(!instance) return res.sendStatus(404);
+
+  res.status(200).send(instance.getSnapshot());
 };
 
 module.exports.createNamedInstance = function(req, res){
@@ -166,11 +148,19 @@ module.exports.sendEvent = function(req, res){
     instanceId = chartName + '/' + req.params.InstanceId;
 
   var instance = instances[instanceId];
+  if(!instance) return res.sendStatus(404);
+  if(!events[instanceId]) events[instanceId] = [];
 
   var event = JSON.parse(req.body);
 
   var nextConfiguration = instance.gen(event); 
   res.setHeader('X-Configuration',JSON.stringify(nextConfiguration));
+
+  events[instanceId].push({
+    timestamp: new Date(),
+    event: event,
+    resultSnapshot: instance.getSnapshot()
+  });
 
   res.sendStatus(200);
 };
