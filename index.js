@@ -3,7 +3,6 @@ var express = require("express"),
   cors = require("cors"),
   path = require('path'),
   smaasJSON = require('../../smaas.json'),
-  app = express(),
   provider = require('./providers/stateful/simple'),
   app = express();
 
