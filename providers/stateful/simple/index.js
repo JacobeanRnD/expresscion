@@ -248,7 +248,7 @@ function broadcastDefinitionChange(chartName, scxmlString){
   if(statechartDefinitionSubscription) {
     statechartDefinitionSubscription.forEach(function(response) {
       response.write('event: onChange\n');
-      response.write('data: ' + scxmlString + '\n\n');
+      response.write('data:\n\n');
     });
   }
 }
