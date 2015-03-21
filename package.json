@@ -12,7 +12,7 @@
     "ejs": "^2.3.1",
     "express": "^4.12.2",
     "libxmljs": "^0.13.0",
-    "scxml": "git://github.com/jbeard4/SCION.git#dd8219316a267ea0e67aaca9a00510407cb14812",
+    "scxml": "git://github.com/jbeard4/SCION.git#0b41d34587640a791a6c246937d13588b0aa48e1",
     "uuid": "^2.0.1"
   }
 }
