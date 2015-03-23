@@ -2,6 +2,7 @@ var scxml = require('scxml');
 var uuid = require('uuid');
 var fs = require('fs');
 var path = require('path');
+var vm = require('vm');
 var validate = require('../../common/validate-scxml').validateCreateScxmlRequest;
 var sse = require('../../common/sse');
 
@@ -11,19 +12,37 @@ var definitionToInstances = {};
 var instances = {};
 var statechartDefinitionSubscriptions = {};
 var events = {};
+var httpHandlers = {};
 
-function createStatechartDefinition(req,res,scName){
-  validate(req, function(errors, scxmlDoc){
+function createStatechartDefinition(req,res,scName) {
+  var scxmlString, handler;
+
+  if(req.headers['content-type'] === 'application/json') {
+    try {
+      var body = JSON.parse(req.body);
+      scxmlString = body.scxml;
+      handler = JSON.parse(body.handlers);
+    } catch(e) {
+      return res.status(400).send({ name : 'error.malformed.body', data : e.message });
+    }
+  } else {
+    scxmlString = req.body;
+  }
+
+  validate(scxmlString, function(errors){
 
     if(errors) return res.status(400).send({ name : 'error.create', data : errors });
 
-    var scxmlString = req.body;
     scxml.documentStringToModel(null, scxmlString, function(err, model){
       var chartName = scName || model().name || uuid.v1();
 
       definitions[chartName] = scxmlString;
       compiledDefinitions[chartName] = model;
       definitionToInstances[chartName] = [];
+
+      if(handler) {
+        httpHandlers[chartName] = handler;
+      }
 
       broadcastDefinitionChange(chartName, scxmlString);
 
@@ -65,6 +84,10 @@ module.exports.createStatechartDefinition = function(req, res){
   createStatechartDefinition(req,res);
 };
 
+module.exports.createOrUpdateStatechartDefinition = function(req, res){
+  createStatechartDefinition(req, res, req.params.StateChartName);
+};
+
 module.exports.getStatechartDefinitions = function(req, res){
   res.json(Object.keys(definitions));
 };
@@ -78,10 +101,6 @@ module.exports.getStatechartDefinition = function(req, res){
   if(!model) return res.sendStatus(404);
 
   res.status(200).send(model);
-};
-
-module.exports.createOrUpdateStatechartDefinition = function(req, res){
-  createStatechartDefinition(req, res, req.params.StateChartName);
 };
 
 module.exports.createInstance = function(req, res){
@@ -241,6 +260,62 @@ module.exports.getEventLog = function (req, res) {
   if(!instance) return res.sendStatus(404);
 
   res.status(200).send(events[instanceId]);
+}
+
+module.exports.httpHandlerAction = function (req, res) {
+  var chartName = req.params.StateChartName,
+    handlerName = req.params.HandlerName;
+
+  if(httpHandlers[chartName] && httpHandlers[chartName][handlerName]) {
+    var httpHandler = httpHandlers[chartName][handlerName];
+
+    var vmContext = {
+      req: req,
+      res: res,
+      chartName: chartName,
+      scxml: {
+        getInstance: function (id) {
+          if(id.indexOf(chartName + '/') !== 0) {
+            //If id doesn't start with "foo.scxml/" add chart name
+            id = chartName + '/' + id;
+          }
+
+          var instance = instances[id];
+
+          return instance;
+        },
+        createInstance: function (id) {
+          if(id) {
+            if(id.indexOf(chartName + '/') !== 0) {
+              //If id doesn't start with "foo.scxml/" add chart name
+              id = chartName + '/' + id;
+            }
+          } else {
+            id = chartName  + '/' + uuid.v1();
+          }
+
+          var model = compiledDefinitions[chartName];
+          var instance = new scxml.scion.Statechart(model);
+          var initialConfiguration = instance.start();
+
+          var map = definitionToInstances[chartName] = definitionToInstances[chartName] || [];
+          map.push(id);
+          instances[id] = instance;
+
+          return instance;
+        },
+        send: function (instance, event) {
+          return instance.gen(event);
+        }
+      }
+    };
+
+    vm.createContext(vmContext);
+
+    vm.runInContext('(' + httpHandler + '());', vmContext);
+  } else {
+    res.sendStatus(404);
+  }
 }
 
 function broadcastDefinitionChange(chartName, scxmlString){
