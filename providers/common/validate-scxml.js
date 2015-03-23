@@ -20,27 +20,23 @@ module.exports.validate = function(scxmlDoc){
 }
 
 
-module.exports.validateCreateScxmlRequest = function(req, cb){
-  if(req.headers['content-type'] === 'application/xml') {
-    var scxmlDoc;
+module.exports.validateCreateScxmlRequest = function(scxmlString, cb){
+  var scxmlDoc;
 
-    try {
-      scxmlDoc = libxmljs.parseXml(req.body);
-    } catch(error) {
-      return cb(['Document is not valid xml! Line: ' + error.line + ', Column: ' + error.column, error.message]);
-    }
-
-    //Validate against scxml specification
-    if (!scxmlDoc.validate(scxmlSchema)) {
-      var errors = scxmlDoc.validationErrors.map(function (error) {
-        return ['Document is not valid! Line: ' + error.line + ', Column: ' + error.column, error.message];
-      });
-
-      return cb(errors);
-    }
-
-    cb(null, scxmlDoc);
-  }else{
-    return cb('Content-Type must be one appliction/xml');
+  try {
+    scxmlDoc = libxmljs.parseXml(scxmlString);
+  } catch(error) {
+    return cb(['Document is not valid xml! Line: ' + error.line + ', Column: ' + error.column, error.message]);
   }
+
+  //Validate against scxml specification
+  if (!scxmlDoc.validate(scxmlSchema)) {
+    var errors = scxmlDoc.validationErrors.map(function (error) {
+      return ['Document is not valid! Line: ' + error.line + ', Column: ' + error.column, error.message];
+    });
+
+    return cb(errors);
+  }
+
+  cb(null, scxmlDoc);
 };
