@@ -285,6 +285,8 @@ module.exports.getEventLog = function (req, res) {
 }
 
 module.exports.httpHandlerAction = function (req, res) {
+  console.log(req.path, req.query);
+
   var chartName = req.params.StateChartName,
     handlerName = req.params.HandlerName;
 
@@ -295,6 +297,7 @@ module.exports.httpHandlerAction = function (req, res) {
       req: req,
       res: res,
       chartName: chartName,
+      console: console,
       scxml: {
         getInstance: function (id) {
           var instance = getInstance(normalizeInstanceId(chartName, id));
@@ -304,8 +307,8 @@ module.exports.httpHandlerAction = function (req, res) {
           var instanceResult = createInstance(chartName, id);
           return instanceResult.error ? null : instanceResult.id;
         },
-        send: function (instanceId, event) {
-          return sendEvent(instanceId, event);
+        send: function (id, event) {
+          return sendEvent(normalizeInstanceId(chartName, id), event);
         }
       }
     };
