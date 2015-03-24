@@ -27,7 +27,7 @@ app.get('/smaas.json', function (req, res) {
 
 app.get('/api/v1/:StateChartName/:InstanceId/_viz', provider.instanceViz);
 app.get('/api/v1/:StateChartName/_viz', provider.statechartViz);
-app.all('/api/v1/:StateChartName/_handlers/:HandlerName', provider.httpHandlerAction);
+app.all('/api/v1/:StateChartName/_handlers/:HandlerName/*', provider.httpHandlerAction);
 
 Object.keys(smaasJSON.paths).forEach(function(endpointPath){
   var endpoint = smaasJSON.paths[endpointPath];
