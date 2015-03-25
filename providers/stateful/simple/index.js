@@ -206,13 +206,19 @@ module.exports.sendEvent = function(req, res){
   res.sendStatus(200);
 };
 
+function deleteInstance (chartName, instanceId) {
+  var success = delete instances[instanceId];
+  var arr = definitionToInstances[chartName];
+  arr.splice(arr.indexOf(instanceId), 1);
+
+  return success;
+}
+
 module.exports.deleteInstance = function(req, res){
   var chartName = req.params.StateChartName,
     instanceId = chartName + '/' + req.params.InstanceId;
 
-  var success = delete instances[instanceId];
-  var arr = definitionToInstances[chartName];
-  arr.splice(arr.indexOf(instanceId),1);
+  var success = deleteInstance(chartName, instanceId);
 
   if(success){
     res.sendStatus(200);
@@ -304,6 +310,9 @@ module.exports.httpHandlerAction = function (req, res) {
         createInstance: function (id) {
           var instanceResult = createInstance(chartName, id);
           return instanceResult.error ? null : instanceResult.id;
+        },
+        deleteInstance: function (id) {
+          return deleteInstance(chartName, normalizeInstanceId(chartName, id));
         },
         send: function (id, event) {
           return sendEvent(normalizeInstanceId(chartName, id), event);
