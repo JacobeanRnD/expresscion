@@ -285,8 +285,6 @@ module.exports.getEventLog = function (req, res) {
 }
 
 module.exports.httpHandlerAction = function (req, res) {
-  console.log(req.path, req.query);
-
   var chartName = req.params.StateChartName,
     handlerName = req.params.HandlerName;
 
