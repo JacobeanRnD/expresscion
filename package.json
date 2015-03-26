@@ -1,11 +1,15 @@
 {
-  "name": "swagger-client",
-  "description": "Wordnik node.js server generator",
+  "name": "scxmld",
+  "description": "Standalone in-memory SCXML server daemon",
   "version": "1.0.0",
-  "homepage": "",
-  "main": "./main.js",
+  "homepage": "https://github.com/JacobeanRnD/SCXMLD",
+  "main": "./index.js",
   "engines": {
     "node": ">= 0.8.x"
+  },
+  "preferGlobal": true,
+  "bin": {
+    "scxmld": "index.js"
   },
   "dependencies": {
     "cors": "2.1.1",
