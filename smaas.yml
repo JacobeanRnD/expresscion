@@ -1,0 +1,393 @@
+# this is an example of the Uber API
+# as a demonstration of an API spec in YAML
+swagger: '2.0'
+info:
+  title: SMaaS
+  description: State Machines as a Service API
+  version: "1.0.0"
+# the domain of the service
+host: simulation.scxml.io
+# array of all schemes that your API supports
+schemes:
+  - http
+# will be prefixed to all paths
+basePath: /api/v1
+produces:
+  - application/json
+  - application/xml
+  - text/event-stream
+paths:
+  /:
+    post:
+      operationId : createStatechartDefinition
+      summary: Create a state machine definition.
+      consumes:
+        - application/xml
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: scxmlDefinition
+          in: body
+          description: SCXML file
+          required: false
+          schema: 
+            type : string
+        - name: scxmlWithHandlers
+          in: body
+          description: SCXML content with handlers, send this with application/json.
+          required: false
+          schema: 
+            $ref: '#/definitions/ScxmlWithHandlers'
+      responses:
+        201:
+          description: Created state machine definition
+          schema:
+            $ref: '#/definitions/Message'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Message'
+  /_all_statechart_definitions:
+    get:
+      operationId : getStatechartDefinitions
+      summary: Get list of all statecharts
+      produces:
+        - application/json
+      responses:
+        201:
+          description: Retrieved the list of statecharts successfully
+          schema:
+            $ref: '#/definitions/Message'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Message'
+  /{StateChartName}:
+    get:
+      operationId : getStatechartDefinition
+      summary: Get information on the Statechart definition, including SCXML, SCJSON, etc.
+      produces:
+        - application/json
+      parameters:
+        - name: StateChartName
+          in: path
+          description: Name of the previously created statechart
+          required: true
+          type: string
+      responses:
+        201:
+          description: Created a new instance with random id
+          schema:
+            $ref: '#/definitions/Message'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Message'
+    put:
+      operationId : createOrUpdateStatechartDefinition
+      summary: Updates an existing state machine definition
+      consumes:
+        - application/xml
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: scxmlDefinition
+          in: body
+          description: SCXML file
+          required: false
+          schema: 
+            type : string
+        - name: StateChartName
+          in: path
+          description: Name of the previously created statechart
+          required: true
+          type: string
+        - name: scxmlWithHandlers
+          in: body
+          description: SCXML content with handlers, send this with application/json.
+          required: false
+          schema: 
+            $ref: '#/definitions/ScxmlWithHandlers'
+      responses:
+        201:
+          description: Updated state machine definition
+          schema:
+            $ref: '#/definitions/Message'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Message'
+    delete:
+      operationId : deleteStatechartDefinition
+      summary: Delete an existing Statechart
+      produces:
+        - application/json
+      parameters:
+        - name: StateChartName
+          in: path
+          description: Name of the previously created statechart
+          required: true
+          type: string
+      responses:
+        200:
+          description: Statechart deleted successfully
+          schema:
+            $ref: '#/definitions/Message'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Message'
+    post:
+      operationId : createInstance
+      summary: Create an instance with random id
+      produces:
+        - application/json
+      parameters:
+        - name: StateChartName
+          in: path
+          description: Name of the previously created statechart
+          required: true
+          type: string
+      responses:
+        201:
+          description: Created a new instance with random id
+          schema:
+            $ref: '#/definitions/Message'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Message'
+  /{StateChartName}/_all_instances:
+    get:
+      operationId : getInstances
+      summary: Get list of all statechart instances
+      produces:
+        - application/json
+      parameters:
+        - name: StateChartName
+          in: path
+          description: Name of the previously created statechart
+          required: true
+          type: string  
+      responses:
+        201:
+          description: Retrieved the list of instances successfully
+          schema:
+            $ref: '#/definitions/Message'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Message'
+  /{StateChartName}/_changes:
+    get:
+      operationId : getStatechartDefinitionChanges
+      summary: Subscribe to statechart Changes API
+      produces:
+        - text/event-stream
+      parameters:
+        - name: StateChartName
+          in: path
+          description: Name of the previously created statechart
+          required: true
+          type: string  
+      responses:
+        200:
+          description: Started listening to changes successfully
+          schema:
+            $ref: '#/definitions/Message'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Message'
+  /{StateChartName}/{InstanceId}:
+    get:
+      operationId : getInstance
+      summary: Get information on all statechart instance, including current state
+      produces:
+        - application/json
+      parameters:
+        - name: StateChartName
+          in: path
+          description: Name of the previously created statechart
+          required: true
+          type: string  
+        - name: InstanceId
+          in: path
+          description: Id or name of the instance
+          required: true
+          type: string   
+      responses:
+        201:
+          description: Retrieved instance details successfully
+          schema:
+            $ref: '#/definitions/Message'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Message'
+    put:
+      operationId : createNamedInstance
+      summary: Create an instance with given id
+      produces:
+        - application/json
+      parameters:
+        - name: StateChartName
+          in: path
+          description: Name of the previously created statechart
+          required: true
+          type: string  
+        - name: InstanceId
+          in: path
+          description: Id or name of the instance
+          required: true
+          type: string 
+      responses:
+        201:
+          description: Created a new instance with given device id
+          schema:
+            $ref: '#/definitions/Message'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Message'
+    post:
+      operationId : sendEvent
+      summary: Send an event to the Statechart instance
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: StateChartName
+          in: path
+          description: Name of the previously created statechart
+          required: true
+          type: string  
+        - name: InstanceId
+          in: path
+          description: Id or name of the instance
+          required: true
+          type: string 
+        - name: Event
+          in: body
+          description: An event object
+          required: true
+          schema: 
+            $ref: '#/definitions/Event'
+      responses:
+        200:
+          description: Event sent successfully
+          schema:
+            $ref: '#/definitions/Message'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Message'
+    delete:
+      operationId : deleteInstance
+      summary: Delete an existing Statechart instance
+      produces:
+        - application/json
+      parameters:
+        - name: StateChartName
+          in: path
+          description: Name of the previously created statechart
+          required: true
+          type: string  
+        - name: InstanceId
+          in: path
+          description: Id or name of the instance
+          required: true
+          type: string 
+      responses:
+        200:
+          description: Instance deleted successfully
+          schema:
+            $ref: '#/definitions/Message'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Message'
+  /{StateChartName}/{InstanceId}/_changes:
+    get:
+      operationId : getInstanceChanges
+      summary: Subscribe to instance Changes API
+      produces:
+        - text/event-stream
+      parameters:
+        - name: StateChartName
+          in: path
+          description: Name of the previously created statechart
+          required: true
+          type: string  
+        - name: InstanceId
+          in: path
+          description: Id or name of the instance
+          required: true
+          type: string 
+      responses:
+        200:
+          description: Started listening to changes successfully
+          schema:
+            $ref: '#/definitions/Message'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Message'
+  /{StateChartName}/{InstanceId}/_eventLog:
+    get:
+      operationId : getEventLog
+      summary: Get all list of events on an instance
+      produces:
+        - application/json
+      parameters:
+        - name: StateChartName
+          in: path
+          description: Name of the previously created statechart
+          required: true
+          type: string  
+        - name: InstanceId
+          in: path
+          description: Id or name of the instance
+          required: true
+          type: string 
+      responses:
+        200:
+          description: Retrieved event log successfully
+          schema:
+            $ref: '#/definitions/Message'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Message'
+definitions:
+  Message : 
+    type : object
+    properties : 
+      name : 
+        type : string
+      data : 
+        type : object
+        properties : 
+          data :
+            type : object
+          message : 
+            type : string
+  Event:
+    type: object
+    properties:
+      name:
+        type: string
+      data:
+        type: object
+  ScxmlWithHandlers:
+    type: object
+    properties:
+      scxml:
+        description: Scxml definition
+        type: string
+      handlers:
+        description: Associative array of handlers, name is the path that is going to register as http endpoint.
+        type: string
