@@ -11,6 +11,10 @@
   "bin": {
     "scxmld": "index.js"
   },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "bower install"
+  },
   "dependencies": {
     "cors": "2.1.1",
     "ejs": "^2.3.1",
