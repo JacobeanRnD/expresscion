@@ -11,7 +11,9 @@ var express = require("express"),
 
 var smaasJSON = yaml.safeLoad(fs.readFileSync(__dirname + '/smaas.yml','utf8'));
 
-smaasJSON.host = process.env.SMAAS_HOST_URL || 'localhost:8002',
+var port = process.env.PORT || 8002;
+
+smaasJSON.host = (process.env.SMAAS_HOST_URL || process.env.HOST || 'localhost') + ':' + port;
 
 // buffer the body
 app.use(function(req, res, next) {
@@ -69,5 +71,5 @@ app.use(function(req, res, next) {
   res.sendStatus(404).send('Can\'t find ' + req.path);
 });
 
-app.listen(8002);
+app.listen(port);
 
