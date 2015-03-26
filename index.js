@@ -13,7 +13,7 @@ var smaasJSON = yaml.safeLoad(fs.readFileSync(__dirname + '/smaas.yml','utf8'));
 
 var port = process.env.PORT || 8002;
 
-smaasJSON.host = (process.env.SMAAS_HOST_URL || process.env.HOST || 'localhost') + ':' + port;
+smaasJSON.host = process.env.SMAAS_HOST_URL || ('localhost' + ':' + port);
 
 // buffer the body
 app.use(function(req, res, next) {
