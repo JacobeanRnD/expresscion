@@ -2,9 +2,12 @@ var express = require("express"),
   url = require("url"),
   cors = require("cors"),
   path = require('path'),
-  smaasJSON = require('../../smaas.json'),
+  fs = require('fs'),
+  yaml = require('js-yaml'),
   provider = require('./providers/stateful/simple'),
   app = express();
+
+var smaasJSON = yaml.safeLoad(fs.readFileSync(__dirname + '/smaas.yml','utf8'));
 
 smaasJSON.host = process.env.SMAAS_HOST_URL || 'localhost:8002',
 
