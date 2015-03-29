@@ -301,6 +301,7 @@ module.exports.httpHandlerAction = function (req, res) {
       res: res,
       chartName: chartName,
       console: console,
+      require: require,
       scxml: {
         getInstance: function (id) {
           var instance = getInstance(normalizeInstanceId(chartName, id));
