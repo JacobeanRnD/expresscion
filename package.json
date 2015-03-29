@@ -4,6 +4,10 @@
   "version": "1.0.0",
   "homepage": "https://github.com/JacobeanRnD/SCXMLD",
   "main": "./index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "bower install"
+  },
   "engines": {
     "node": ">= 0.8.x"
   },
