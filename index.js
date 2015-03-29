@@ -68,7 +68,7 @@ Object.keys(smaasJSON.paths).forEach(function(endpointPath){
 });
 
 app.use(function(req, res, next) {
-  res.sendStatus(404).send('Can\'t find ' + req.path);
+  res.status(404).send('Can\'t find ' + req.path);
 });
 
 app.listen(port);
