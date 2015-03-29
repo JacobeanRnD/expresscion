@@ -87,7 +87,6 @@ module.exports.createInstance = function(req, res){
 
 module.exports.createNamedInstance = function(req, res){
   var instanceResult = createInstance(req.params.StateChartName, req.params.InstanceId);
-  console.log(instanceResult);
   if(instanceResult.error) return res.sendStatus(instanceResult.error.statusCode);
 
   res.setHeader('Location', instanceResult.id);
