@@ -18,14 +18,14 @@
   "scripts": {
     "preinstall": "npm install -g bower",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "bower install"
+    "postinstall": "bower --allow-root install"
   },
   "dependencies": {
     "cors": "2.1.1",
     "ejs": "^2.3.1",
     "express": "^4.12.2",
     "js-yaml": "^3.2.7",
-    "libxmljs": "^0.13.0",
+    "libxmljs": "0.11.0",
     "scxml": "git://github.com/jbeard4/SCION.git#0b41d34587640a791a6c246937d13588b0aa48e1",
     "uuid": "^2.0.1"
   }
