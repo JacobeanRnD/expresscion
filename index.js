@@ -73,3 +73,8 @@ app.use(function(req, res, next) {
 
 app.listen(port);
 
+if(require.main === module) {
+  app.listen(port);
+} else {
+  module.exports = app;  
+}
