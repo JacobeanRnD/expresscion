@@ -113,6 +113,8 @@ module.exports.getStatechartDefinition = function(req, res){
 module.exports.deleteStatechartDefinition = function(req, res){
   var chartName = req.params.StateChartName;
 
+  if(!definitions[chartName]) return res.sendStatus(404);
+
   var success = delete definitions[chartName];
   definitionToInstances[chartName].forEach(function(instanceId){
     //TODO: stop running instances
@@ -216,6 +218,8 @@ function deleteInstance (chartName, instanceId) {
 module.exports.deleteInstance = function(req, res){
   var chartName = req.params.StateChartName,
     instanceId = chartName + '/' + req.params.InstanceId;
+
+  if(!instances[instanceId]) return res.sendStatus(404);
 
   var success = deleteInstance(chartName, instanceId);
 
