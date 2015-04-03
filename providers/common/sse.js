@@ -16,7 +16,6 @@ exports.initStream = function(req, res, closeCb){
 
   //clean up
   req.on('close', function() {
-    console.log('Request closed');
     closeCb();
     clearInterval(handle);
   });
