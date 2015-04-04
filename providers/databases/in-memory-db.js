@@ -73,5 +73,11 @@ module.exports = function (opts) {
     done(null, metaInformation[key]);
   };
 
+  db.del = function (key, done) {
+    var success = delete metaInformation[key];
+    
+    done(null, success);
+  };
+
   return db;
 };
