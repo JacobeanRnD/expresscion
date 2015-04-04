@@ -9,7 +9,6 @@ var sse = require('./sse');
 var definitions = {};
 var compiledDefinitions = {};
 var definitionToInstances = {};
-var instances = {};
 var statechartDefinitionSubscriptions = {};
 var events = {};
 var httpHandlers = {};
@@ -17,7 +16,7 @@ var httpHandlers = {};
 module.exports = function (simulation, database) {
   var api = {};
 
-  function createStatechartDefinition(req,res,scName) {
+  function createStatechartDefinition(req, res, scName) {
     var scxmlString, handler;
 
     if(req.headers['content-type'] === 'application/json') {
@@ -36,7 +35,9 @@ module.exports = function (simulation, database) {
 
       if(errors) return res.status(400).send({ name : 'error.create', data : errors });
 
-      scxml.documentStringToModel(null, scxmlString, function(err, model){
+      simulation.createStatechart(scxmlString, function (err, model) {
+        if(err) return res.status(500).send(err);
+
         var chartName = scName || model().name || uuid.v1();
 
         definitions[chartName] = scxmlString;
@@ -63,25 +64,21 @@ module.exports = function (simulation, database) {
     createStatechartDefinition(req, res, req.params.StateChartName);
   };
 
-  function createInstance(chartName, instanceId){
+  function createInstance(chartName, instanceId, done){
     instanceId = chartName  + '/' + (instanceId || uuid.v1());
     var model = compiledDefinitions[chartName];
 
-    if(!model) return { error: { statusCode: 404 } };
+    if(!model) return done({ error: { statusCode: 404 } });
 
-    var instance = new scxml.scion.Statechart(model);
-    var initialConfiguration = instance.start();
+    simulation.createInstance(instanceId, model, function (err, instance) {
+      simulation.startInstance(instanceId, function (initialConfiguration) {
+        //update data stores
+        var map = definitionToInstances[chartName] = definitionToInstances[chartName] || [];
+        map.push(instance.id);
 
-    //update data stores
-    var map = definitionToInstances[chartName] = definitionToInstances[chartName] || [];
-    map.push(instanceId);
-    instances[instanceId] = instance;
-
-    return {
-      instance: instance,
-      id: instanceId,
-      initialConfiguration: initialConfiguration
-    };
+        done(err, instanceId, initialConfiguration);
+      });
+    });
   }
 
   api.createInstance = function(req, res){
@@ -89,13 +86,14 @@ module.exports = function (simulation, database) {
   };
 
   api.createNamedInstance = function(req, res){
-    var instanceResult = createInstance(req.params.StateChartName, req.params.InstanceId);
-    if(instanceResult.error) return res.sendStatus(instanceResult.error.statusCode);
+    createInstance(req.params.StateChartName, req.params.InstanceId, function (err, instanceId, initialConfiguration) {
+      if(err) return res.status(err.statusCode || 500).send(err.message);
 
-    res.setHeader('Location', instanceResult.id);
-    res.setHeader('X-Configuration',JSON.stringify(instanceResult.initialConfiguration));
+      res.setHeader('Location', instanceId);
+      res.setHeader('X-Configuration',JSON.stringify(initialConfiguration));
 
-    res.sendStatus(201);
+      res.sendStatus(201);
+    });
   };
 
   api.getStatechartDefinitions = function(req, res){
@@ -118,18 +116,22 @@ module.exports = function (simulation, database) {
 
     if(!definitions[chartName]) return res.sendStatus(404);
 
-    var success = delete definitions[chartName];
-    definitionToInstances[chartName].forEach(function(instanceId){
-      //TODO: stop running instances
-      delete instances[instanceId];
+    simulation.deleteStatechart(function (err) {
+      if(err) return res.status(500).send(err);
+
+      var success = delete definitions[chartName];
+      definitionToInstances[chartName].forEach(function(instanceId){
+        //TODO: stop running instances
+        delete instances[instanceId];
+      });
+      delete definitionToInstances[chartName];
+      
+      if(success){
+        res.sendStatus(200);
+      }else{
+        res.sendStatus(404);
+      }
     });
-    delete definitionToInstances[chartName];
-    
-    if(success){
-      res.sendStatus(200);
-    }else{
-      res.sendStatus(404);
-    }
   };
 
   api.getInstances = function(req, res){
@@ -156,21 +158,15 @@ module.exports = function (simulation, database) {
     });
   };
 
-  function getInstance (id) {
-    var instance = instances[id];
-    if(!instance) return { error: { statusCode: 404 } };
-
-    return instance;
-  }
-
   api.getInstance = function(req, res){
     var chartName = req.params.StateChartName,
-      instanceId = chartName + '/' + req.params.InstanceId,
-      instance = getInstance(instanceId);
+      instanceId = chartName + '/' + req.params.InstanceId;
+        
+      simulation.getInstanceSnapshot(instanceId, function (err, snapshot) {
+        if(err) return res.status(err.statusCode || 500).send(err.message);
 
-    if(instance.error) return res.sendStatus(instance.error.statusCode);
-      
-    res.status(200).send(instance.getSnapshot());
+        res.status(200).send(snapshot);
+      });
   };
 
   function sendEvent (instanceId, event) {
@@ -210,27 +206,26 @@ module.exports = function (simulation, database) {
     res.sendStatus(200);
   };
 
-  function deleteInstance (chartName, instanceId) {
-    var success = delete instances[instanceId];
-    var arr = definitionToInstances[chartName];
-    arr.splice(arr.indexOf(instanceId), 1);
+  function deleteInstance (chartName, instanceId, done) {
+    simulation.deleteInstance(instanceId, function (err) {
+      if(err) return done(err);
 
-    return success;
+      var arr = definitionToInstances[chartName];
+      arr.splice(arr.indexOf(instanceId), 1);
+
+      done();
+    });
   }
 
   api.deleteInstance = function(req, res){
     var chartName = req.params.StateChartName,
       instanceId = chartName + '/' + req.params.InstanceId;
 
-    if(!instances[instanceId]) return res.sendStatus(404);
+    deleteInstance(chartName, instanceId, function (err) {
+      if(err) return res.status(err.statusCode || 500).send(err.message);
 
-    var success = deleteInstance(chartName, instanceId);
-
-    if(success){
       res.sendStatus(200);
-    }else{
-      res.sendStatus(404);
-    }
+    });
   };
 
   api.getInstanceChanges = function(req, res){
