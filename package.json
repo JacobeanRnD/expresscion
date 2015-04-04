@@ -5,9 +5,7 @@
   "homepage": "https://github.com/JacobeanRnD/SCXMLD",
   "main": "./index.js",
   "scripts": {
-    "preinstall": "npm install -g bower",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "bower --allow-root install"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {
     "node": ">= 0.8.x"
