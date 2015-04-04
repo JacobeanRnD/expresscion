@@ -1,7 +1,8 @@
 'use strict';
+// jshint: window: true
 
 $(function() {
-  /* global alert,EventSource */
+  /* global alert,EventSource, $, vizType, _ */
   
   var statechartUrl = '../';
   var statechartChangesUrl = '../_changes';
@@ -17,10 +18,10 @@ $(function() {
     scxmlChangeSource,
     isFirst = true;
 
-  var updateLayout = _.debounce(function(e) {
+  var updateLayout = _.debounce(function() {
     layout.invalidateSize();
   }, 500);
-  window.addEventListener("resize", updateLayout, false);
+  window.addEventListener('resize', updateLayout, false);
 
   getScxml();
 
@@ -46,7 +47,7 @@ $(function() {
           if(!scxmlChangeSource) {
             scxmlChangeSource = new EventSource(statechartChangesUrl);
 
-            scxmlChangeSource.addEventListener('onChange', function(e) {
+            scxmlChangeSource.addEventListener('onChange', function() {
               getScxml();
             }, false);
           }
