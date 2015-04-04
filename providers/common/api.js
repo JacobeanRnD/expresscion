@@ -1,7 +1,6 @@
 'use strict';
 
 var uuid = require('uuid');
-var vm = require('vm');
 var async = require('async');
 var validate = require('./validate-scxml').validateCreateScxmlRequest;
 var sse = require('./sse');
@@ -281,48 +280,6 @@ module.exports = function (simulation, db) {
 
     res.status(200).send(events);
   };
-
-  api.httpHandlerAction = function (req, res) {
-    var chartName = req.params.StateChartName,
-      handlerName = req.params.HandlerName;
-
-    if(httpHandlers[chartName] && httpHandlers[chartName][handlerName]) {
-      var httpHandler = httpHandlers[chartName][handlerName];
-
-      var vmContext = {
-        req: req,
-        res: res,
-        chartName: chartName,
-        console: console,
-        require: require,
-        scxml: {
-          getInstance: function (id) {
-            var instance = getInstance(normalizeInstanceId(chartName, id));
-            return instance.error ? null : instance.getSnapshot();
-          },
-          createInstance: function (id) {
-            var instanceResult = createInstance(chartName, id);
-            return instanceResult.error ? null : instanceResult.id;
-          },
-          deleteInstance: function (id) {
-            return deleteInstance(chartName, normalizeInstanceId(chartName, id));
-          },
-          send: function (id, event) {
-            return sendEvent(normalizeInstanceId(chartName, id), event);
-          }
-        }
-      };
-
-      vm.createContext(vmContext);
-      vm.runInContext('(' + httpHandler + '());', vmContext);
-    } else {
-      res.sendStatus(404);
-    }
-  };
-
-  function normalizeInstanceId (chartName, id) {
-    return id.indexOf(chartName + '/') !== 0 ? (chartName + '/' + id) : id;
-  }
 
   function broadcastDefinitionChange(chartName){
     var statechartDefinitionSubscription = statechartDefinitionSubscriptions[chartName];
