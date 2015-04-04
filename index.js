@@ -9,8 +9,8 @@ var express = require('express'),
   api = require('./providers/common/api');
 
 // TODO: Parameterize this so we can use npm install scxmld-docker plug-in.
-var simulationServer = require('./providers/stateful/simple');
 var database = require('./providers/databases/in-memory-db');
+var simulationServer = require('./providers/stateful/simple')(database);
 
 // Initialize the api
 api = api(simulationServer, database());
