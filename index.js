@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-var express = require("express"),
-  url = require("url"),
-  cors = require("cors"),
+var express = require('express'),
   path = require('path'),
   fs = require('fs'),
   yaml = require('js-yaml'),
@@ -42,7 +40,6 @@ app.get('/smaas.json', function (req, res) {
 
 app.get('/api/v1/:StateChartName/:InstanceId/_viz', api.instanceViz);
 app.get('/api/v1/:StateChartName/_viz', api.statechartViz);
-app.all('/api/v1/:StateChartName/_handlers/:HandlerName/*', api.httpHandlerAction);
 
 Object.keys(smaasJSON.paths).forEach(function(endpointPath){
   var endpoint = smaasJSON.paths[endpointPath];
