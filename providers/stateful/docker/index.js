@@ -71,8 +71,7 @@ module.exports = function(db){
 
 
   api.startInstance = function (id, done) {
-    console.log('here1',id);
-    getContainerInfo(id, function(err, containerInfo){
+    db.get(id, function(err, containerInfo){
       if(err) return done(err);
       request({
         url : 'http://' + containerInfo.ip + ':3000/start',
@@ -87,7 +86,7 @@ module.exports = function(db){
   };
 
   api.getInstanceSnapshot = function (id, done) {
-    getContainerInfo(id, function(err, containerInfo){
+    db.get(id, function(err, containerInfo){
       if(err) return done(err);
       request({
         url : 'http://' + containerInfo.ip + ':3000/',
@@ -101,7 +100,7 @@ module.exports = function(db){
   };
 
   api.sendEvent = function(id, event, done){
-    getContainerInfo(id, function(err, containerInfo){
+    db.get(id, function(err, containerInfo){
       if(err) return done(err);
       request({
         url : 'http://' + containerInfo.ip + ':3000/',
@@ -115,19 +114,6 @@ module.exports = function(db){
     });
   };
 
-  function getContainerInfo(id, done){
-    db.get(id,function(err, containerInfoStr){
-      if(err) return done(err);
-      if(!containerInfoStr) return done({'message':'Cannot find container info for instance'});
-      try {
-        var containerInfo = JSON.parse(containerInfoStr);
-      } catch(e){
-        return done(e);
-      }
-      done(null,containerInfo)
-    });
-  }
-
   api.deleteStatechart = function(chartName, done){
     var image = docker.getImage(chartName);
     image.remove(function(err){
@@ -137,7 +123,7 @@ module.exports = function(db){
   };
 
   api.deleteInstance = function(id, done){
-    getContainerInfo(id, function(err, containerInfo){
+    db.get(id, function(err, containerInfo){
       if(err) return done(err);
 
       var container = docker.getContainer(containerInfo.id);
@@ -156,7 +142,7 @@ module.exports = function(db){
   };
 
   api.registerListener = function(id, res, done){
-    getContainerInfo(id, function(err, containerInfo){
+    db.get(id, function(err, containerInfo){
       if(err) return done(err);
       var request = http.request({
           protocol : 'http:',

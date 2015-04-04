@@ -12,7 +12,7 @@ module.exports = function (opts, initialized) {
   }
 
   opts = opts || {};
-  opts.connectionString = opts.connectionString || process.env.POSTGRES_URL || 'postgres://localhost:5432/smaas';
+  opts.connectionString = opts.connectionString || process.env.POSTGRES_URL || 'postgres://postgres:test@localhost:5432/smaas';
 
   // I think execution should wait for db to initialize
   pg.connect(opts.connectionString, function (connectError, client, done) {
@@ -245,7 +245,12 @@ module.exports = function (opts, initialized) {
     }, function (error, result) {
       if(error) return done(error);
 
-      done(null, result.data);
+      if(result.rows.length){
+        done(null, result.rows[0].data);
+      }else{
+        done(new Error('Unable to find container info'));
+      }
+
     });
   };
 
