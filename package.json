@@ -5,7 +5,9 @@
   "homepage": "https://github.com/JacobeanRnD/SCXMLD",
   "main": "./index.js",
   "scripts": {
-    "test": "echo \"no test specified\" && exit 0"
+    "preinstall": "npm install -g bower",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "bower --allow-root install"
   },
   "engines": {
     "node": ">= 0.8.x"
@@ -16,12 +18,19 @@
   },
   "dependencies": {
     "async": "^0.9.0",
+    "archiver": "^0.14.3",
     "cors": "2.1.1",
+    "dockerode": "^2.1.1",
     "ejs": "^2.3.1",
     "express": "^4.12.2",
+    "fs-extra": "^0.17.0",
+    "fstream": "^1.0.4",
     "js-yaml": "^3.2.7",
     "libxmljs": "0.11.0",
+    "redis": "^0.12.1",
+    "request": "^2.54.0",
     "scxml": "git://github.com/jbeard4/SCION.git#0b41d34587640a791a6c246937d13588b0aa48e1",
+    "tar": "^2.0.0",
     "uuid": "^2.0.1"
   }
 }

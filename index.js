@@ -11,7 +11,7 @@ var express = require("express"),
   api = require('./providers/common/api');
 
 // TODO: Parameterize this so we can use npm install scxmld-docker plug-in.
-var simulationServer = require('./providers/stateful/simple');
+var simulationServer = require('./providers/stateful/docker');
 var database = require('./providers/common/in-memory-db');
 
 // Initialize the api
@@ -44,6 +44,10 @@ app.get('/api/v1/:StateChartName/:InstanceId/_viz', api.instanceViz);
 app.get('/api/v1/:StateChartName/_viz', api.statechartViz);
 app.all('/api/v1/:StateChartName/_handlers/:HandlerName/*', api.httpHandlerAction);
 
+function methodNotImplementedMiddleware(req, res){
+  return res.send(501, {message : "Not implemented"});
+}
+
 Object.keys(smaasJSON.paths).forEach(function(endpointPath){
   var endpoint = smaasJSON.paths[endpointPath];
   var actualPath = smaasJSON.basePath + endpointPath.replace(/{/g, ':').replace(/}/g, '');
@@ -51,6 +55,7 @@ Object.keys(smaasJSON.paths).forEach(function(endpointPath){
   Object.keys(endpoint).forEach(function(methodName){
     var method = endpoint[methodName];
 
+    var handler = api[method.operationId] || methodNotImplementedMiddleware;
     switch(methodName) {
       case 'get': {
         app.get(actualPath, api[method.operationId]);
