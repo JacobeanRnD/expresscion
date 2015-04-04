@@ -79,9 +79,10 @@ module.exports = function () {
     if(done) done();
   };
 
-  server.deleteStatechart = function (name, done) {
-    // Simple server doesn't need to delete anything on simulation side
-    done();
+  server.deleteStatechart = function (chartName, done) {
+    var success = delete models[chartName];
+
+    done(null, success);
   };
 
   server.deleteInstance = function (id, done) {
