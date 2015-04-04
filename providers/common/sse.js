@@ -1,3 +1,5 @@
+'use strict';
+
 exports.initStream = function(req, res, closeCb){
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -19,4 +21,4 @@ exports.initStream = function(req, res, closeCb){
     closeCb();
     clearInterval(handle);
   });
-}
+};

@@ -1,3 +1,5 @@
+'use strict';
+
 var libxmljs = require('libxmljs');
 var path = require('path');
 var fs = require('fs');
@@ -17,8 +19,7 @@ scxmlSchema.find('//xsd:import', {
 
 module.exports.validate = function(scxmlDoc){
   return scxmlDoc.validate(scxmlSchema);
-}
-
+};
 
 module.exports.validateCreateScxmlRequest = function(scxmlString, cb){
   var scxmlDoc;
