@@ -53,8 +53,6 @@ module.exports = function (simulation, db) {
   };
 
   function createInstance(chartName, instanceId, done){
-    instanceId = chartName  + '/' + (instanceId || uuid.v1());
-
     db.getStatechart(chartName, function (err, scxml, model) {
       if(!model) return done({ error: { statusCode: 404 } });
 
@@ -75,7 +73,10 @@ module.exports = function (simulation, db) {
   };
 
   api.createNamedInstance = function(req, res){
-    createInstance(req.params.StateChartName, req.params.InstanceId, function (err, instanceId, initialConfiguration) {
+    var chartName = req.params.StateChartName,
+      instanceId = chartName  + '/' + (req.params.InstanceId || uuid.v1());
+
+    createInstance(chartName, instanceId, function (err, instanceId, initialConfiguration) {
       if(err) return res.status(err.statusCode || 500).send(err.message);
 
       res.setHeader('Location', instanceId);
@@ -155,8 +156,7 @@ module.exports = function (simulation, db) {
   };
 
   api.getInstance = function(req, res){
-    var chartName = req.params.StateChartName,
-      instanceId = chartName + '/' + req.params.InstanceId;
+    var instanceId = getInstanceId(req);
         
       simulation.getInstanceSnapshot(instanceId, function (err, snapshot) {
         if(err) return res.status(err.statusCode || 500).send(err.message);
@@ -184,8 +184,7 @@ module.exports = function (simulation, db) {
   }
 
   api.sendEvent = function(req, res){
-    var chartName = req.params.StateChartName,
-      instanceId = chartName + '/' + req.params.InstanceId,
+    var instanceId = getInstanceId(req),
       event;
 
     try {
@@ -212,7 +211,7 @@ module.exports = function (simulation, db) {
 
   api.deleteInstance = function(req, res){
     var chartName = req.params.StateChartName,
-      instanceId = chartName + '/' + req.params.InstanceId;
+      instanceId = getInstanceId(req);
 
     deleteInstance(chartName, instanceId, function (err) {
       if(err) return res.status(err.statusCode || 500).send(err.message);
@@ -222,8 +221,7 @@ module.exports = function (simulation, db) {
   };
 
   api.getInstanceChanges = function(req, res){
-    var chartName = req.params.StateChartName,
-      instanceId = chartName + '/' + req.params.InstanceId;
+    var instanceId = getInstanceId(req);
 
     var listener = {
       onEntry : function(stateId){
@@ -247,7 +245,7 @@ module.exports = function (simulation, db) {
 
   api.instanceViz = function (req, res) {
     var chartName = req.params.StateChartName,
-      instanceId = chartName + '/' + req.params.InstanceId;
+      instanceId = getInstanceId(req);
 
     db.getInstance(chartName, instanceId, function (err, exists) {
       if(!exists) return res.sendStatus(404);
@@ -271,8 +269,7 @@ module.exports = function (simulation, db) {
   };
 
   api.getEventLog = function (req, res) {
-    var chartName = req.params.StateChartName,
-      instanceId = chartName + '/' + req.params.InstanceId;
+    var instanceId = getInstanceId(req);
 
     var events = events[instanceId];
 
@@ -289,6 +286,10 @@ module.exports = function (simulation, db) {
         response.write('data:\n\n');
       });
     }
+  }
+
+  function getInstanceId (req) {
+    return req.params.StateChartName + '/' + req.params.InstanceId;
   }
 
   return api;
