@@ -1,7 +1,7 @@
+'use strict';
+
 var scxml = require('scxml');
 var uuid = require('uuid');
-var fs = require('fs');
-var path = require('path');
 var vm = require('vm');
 var validate = require('../../common/validate-scxml').validateCreateScxmlRequest;
 var sse = require('../../common/sse');
