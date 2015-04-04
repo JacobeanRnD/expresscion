@@ -1,0 +1,6 @@
+{
+  "instanceId" : "foo",
+  "scxml" : "<?xml version=\"1.0\" encoding=\"UTF-8\"?> <scxml xmlns=\"http://www.w3.org/2005/07/scxml\" version=\"1.0\"> <state id=\"a\"> <transition target=\"b\" event=\"t\"/> </state> <state id=\"b\"> <transition target=\"c\" event=\"t2\"/> </state> <state id=\"c\"/> </scxml>",
+  "snapshot" : null,
+  "event" : null
+}

@@ -2,198 +2,178 @@ var scxml = require('scxml');
 var uuid = require('uuid');
 var fs = require('fs');
 var path = require('path');
-var validate = require('../common/validate-scxml');
-var sse = require('../common/sse');
+var validate = require('../../common/validate-scxml').validateCreateScxmlRequest;
+var sse = require('../../common/sse');
+var docker = require('./docker');
+var archiver = require('archiver');
+var http = require('http');
 
-var dockerode = require('dockerode');
 var request = require('request');
 
-var containers = [];
+var tar = require('tar');
+var fstream = require('fstream');
+var createSandbox = require('./ScionSandbox');
+var simpleSmaasProvider = require('../simple');
 
-//TODO: set up dockerode
+var compiledScxmlModuleName = 'compiled-scxml.js';
+var dockerfileStr = 
+  'FROM    jbeard4/stateful-docker-server-image\n' + 
+  'COPY ' + compiledScxmlModuleName + ' /src/' + compiledScxmlModuleName;
 
-function createStatechartDefinition(req,res,scName){
-  validate(req, function(errors, scxmlDoc){
+module.exports = function(db){
 
-    if(errors) return res.send(400,{name : 'error.create', data : errors});
+  var api = {};
 
-    var scxmlString = req.body;
+  api.createStatechart = function (scxmlString, done) {
     scxml.documentStringToModel(null, scxmlString, function(err, model){
-      var chartName = scName || model.name || uuid.v1());
+      var chartName = scName || model.name || uuid.v1();
 
-      //TODO: create an image with the compiled module baked in
-      docker.buildImage('archive.tar', {t: chartName}, function (err, response){
-        //...
+      var compiledModuleStr = 'module.exports = ' + model.toString() + ';';
 
-        broadcastDefinitionChange(scxmlString);
+      archive.append(dockerfileStr, {name : 'Dockerfile'}); 
+      archive.append(compiledModuleStr, {name : compiledScxmlModuleName}); 
 
-        res.setHeader('Location', chartName);
-        res.send(201);
+      docker.buildImage(archive, {t: chartName, isStream : true}, function (err, response){
+        return done(err);
 
-      });
-
-    });
-  });
-}
-
-function createInstance(req, res, instanceId){
-  var chartName = req.param('StateChartName');
-  instanceId = chartName  + '/' + (instanceId || uuid.v1());
-
-  //TODO: create a container
-  docker.createContainer({Image: chartName, name: instanceId}, function (err, container) {
-    container.start(function (err, data) {
-
-      //...
-
-      res.setHeader('Location', instanceId);
-      res.setHeader('X-Configuration',JSON.stringify(initialConfiguration));
-
-      res.send(201);
-    });
-  });
-}
-
-module.exports.createStatechartDefinition = function(req, res){
-  createStatechartDefinition(req,res);
-};
-
-module.exports.getStatechartDefinitions = function(req, res){
-  docker.listImages(function(err, images){
-    res.send(images);
-  });
-};
-
-module.exports.getStatechartDefinition = function(req, res){
-  var chartName = req.param('StateChartName');
-
-  //TODO: read file out of docker image, or keep it in separate repo
-};
-
-module.exports.createOrUpdateStatechartDefinition = function(req, res){
-  createStatechartDefinition(req,res,req.param('StateChartName'));
-};
-
-module.exports.createInstance = function(req, res){
-  createInstance(req, res);
-};
-
-module.exports.deleteStatechartDefinition = function(req, res){
-  var chartName = req.param('StateChartName');
-
-  docker.removeImage(chartName, function(err){
-    //TODO: remove containers?
-    if(success){
-      res.send(200);
-    }else{
-      res.send(404);
-    }
-  });
-};
-
-module.exports.getInstances = function(req, res){
-  var chartName = req.param('StateChartName');
-  
-  docker.listContainers({filter : 'name=' + chartName + '/'},function(err, instances){
-    //TODO: would be better to support filtering based on image name. This is OK for now
-    if(instances){
-      res.send(instances);
-    }else{
-      res.send(404);
-    }
-  });
-};
-
-module.exports.getStatechartDefinitionChanges = function(req, res){
-  var chartName = req.param('StateChartName');
-
-  var statechartDefinitionSubscriptions = 
-    statechartDefinitionSubscriptions[chartName] = 
-      statechartDefinitionSubscriptions[chartName] || [];
-  statechartDefinitionSubscriptions.push(res);
-
-  sse.initStream(req, res, function(){
-    statechartDefinitionSubscriptions.splice(
-      statechartDefinitionSubscriptions.indexOf(res), 1);
-  });
-};
-
-module.exports.getInstance = function(req, res){
-  var chartName = req.param('StateChartName'),
-    instanceId = chartName + '/' + req.param('InstanceId');
-
-  docker.listContainers({filter : 'name=' + instanceId},function(err, instances){
-    if(instances && instances.length){
-      var instance = instances[0];
-      //TODO: call into the instance to fetch the snapshot
-      res.send(instance);
-    }else{
-      res.send(404);
-    }
-  });
-};
-
-module.exports.createNamedInstance = function(req, res){
-  createInstance(req, res, req.param('InstanceId'));
-};
-
-module.exports.sendEvent = function(req, res){
-
-  var chartName = req.param('StateChartName'),
-    instanceId = chartName + '/' + req.param('InstanceId');
-
-  var event = JSON.parse(req.body);
-
-  //get the instance
-  docker.listContainers({filter : 'name=' + instanceId},function(err, instances){
-    if(instances && instances.length){
-      var instance = instances[0];
-      instance.inspect(function(err, info){
-        request.post({
-          url : 'http://' + info.NetworkSettings.IPAddress + ':80/react',
-          json : event 
-        }, function(err, response, body){
-          if(err){
-            res.send(500);
-          }else{
-            res.setHeader('X-Configuration',JSON.stringify(nextConfiguration));
-            res.send(200);
-          }
+        var str = '';
+        response.on('data',function(s){
+          str += s.toString(); 
         });
+        response.on('end',function(){
+          done();
+        });
+
+        //TODO: broadcastDefinitionChange(scxmlString);
       });
-    }else{
-      res.send(404);
-    }
-  });
-};
 
-module.exports.deleteInstance = function(req, res){
-  var chartName = req.param('StateChartName'),
-    instanceId = chartName + '/' + req.param('InstanceId');
-
-  var container = docker.getContainer(instanceId);
-  container.stop(function(err){
-    //TODO: how do we know if container not found? e.g. 404 versus 500
-    container.remove(function(err){
-      res.send(200);
+      archive.finalize();
     });
-  });
-};
+  };
 
-module.exports.getInstanceChanges = function(req, res){
-  var chartName = req.param('StateChartName'),
-    instanceId = chartName + '/' + req.param('InstanceId');
 
-  //TODO: simply proxy to the container's IP address and _changes API
-};
+  api.createInstance = function (chartName, done) {
+    //create a container
+    createSandbox({image: chartName}, function (err, sandbox, initialSnapshot) {
+      return done(err);
 
-function broadcastDefinitionChange(chartName, scxmlString){
-  var statechartDefinitionSubscriptions = statechartDefinitionSubscriptions[chartName];
-  if(statechartDefinitionSubscriptions) {
-    statechartDefinitionSubscriptions.forEach(function(response) {
-      response.write('event: onChange\n');
-      response.write('data:\n\n');
+      var instanceId = maybeInstanceId || sandbox.id || uuid.v1();
+      var instanceLocation = chartName  + '/' + instanceId;
+
+      db.set(instanceLocation, JSON.stringify(sandbox), function(err){
+        return done(err);
+
+        done(null, instanceId);
+      });
+    }); 
+  };
+
+
+  module.exports.startInstance = function (id, done) {
+    getContainerInfo(id, function(err, containerInfo){
+      if(err) return done(err);
+      request({
+        url : 'http://' + containerInfo.ip + ':3000/start',
+        method : 'POST',
+        json : event
+      },function(err, response, body){
+        if(err) return done(err);
+
+        return done(null, body);
+      });
+    });
+  };
+
+  module.exports.getInstanceSnapshot = function (id, done) {
+    getContainerInfo(id, function(err, containerInfo){
+      if(err) return done(err);
+      request({
+        url : 'http://' + containerInfo.ip + ':3000/',
+        method : 'GET'
+      },function(err, response, body){
+        if(err) return done(err);
+
+        return done(null, body);
+      });
+    });
+  };
+
+  api.sendEvent = function(id, event, done){
+    getContainerInfo(id, function(err, containerInfo){
+      if(err) return done(err);
+      request({
+        url : 'http://' + containerInfo.ip + ':3000/',
+        method : 'POST',
+        json : event
+      },function(err, response, body){
+        if(err) return done(err);
+
+        return done(null, body);
+      });
+    });
+  };
+
+  function getContainerInfo(id, done){
+    db.get(id,function(err, containerInfoStr){
+      if(err) return done(err);
+      if(!containerInfoStr) return done({'message':'Cannot find container info for instance'}
+      try {
+        var containerInfo = JSON.parse(containerInfoStr);
+      } catch(e){
+        return done(e);
+      }
+      done(null,containerInfo)
     });
   }
-}
 
+  api.deleteStatechart = function(chartName, done){
+    var image = docker.getImage(chartName);
+    image.remove(function(err){
+      if(err) return res.send(500, err.message);
+      res.send(200);
+    });
+  };
+
+  api.deleteInstance = function(id, done){
+    getContainerInfo(id, function(err, containerInfo){
+      if(err) return done(err);
+
+      var container = docker.getContainer(containerInfo.id);
+      container.stop(function(err){
+        if(err) return done(err);
+        container.remove(function(err){
+          if(err) return done(err);
+          db.del(instanceId,function(err){
+            if(err) return done(err);
+
+            done();
+          });
+        });
+      });
+    })
+  };
+
+  api.registerListener = function(id, res, done){
+    getContainerInfo(id, function(err, containerInfo){
+      if(err) return done(err);
+      var request = http.request({
+          protocol : 'http:',
+          hostname : containerInfo.ip,
+          port : 3000,
+          path : '/_changes'
+        }, function(response) {
+          console.log('STATUS: ' + res.statusCode);
+          console.log('HEADERS: ' + JSON.stringify(res.headers));
+          response.pipe(res);
+      });
+      request.end();
+    });
+  };
+
+  api.unregisterListener = function (id, listener, done) {
+    //TODO
+    done();
+  };
+
+  return api;
+}
