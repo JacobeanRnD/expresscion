@@ -12,7 +12,7 @@ var express = require('express'),
 var database = require('./providers/databases/postgres-db')(function () {
   console.log('Db initialized');
 });
-var simulationServer = require('./providers/stateful/simple')(database);
+var simulationServer = require('./providers/stateful/docker')(database);
 
 // Initialize the api
 api = api(simulationServer, database);
