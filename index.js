@@ -7,10 +7,15 @@ var express = require("express"),
   path = require('path'),
   fs = require('fs'),
   yaml = require('js-yaml'),
-  app = express();
+  app = express(),
+  api = require('./providers/common/api');
 
 // TODO: Parameterize this so we can use npm install scxmld-docker plug-in.
 var simulationServer = require('./providers/stateful/simple');
+var database = require('./providers/common/db');
+
+// Initialize the api
+api = api(simulationServer, database);
 
 var smaasJSON = yaml.safeLoad(fs.readFileSync(__dirname + '/smaas.yml','utf8'));
 
@@ -35,9 +40,9 @@ app.get('/smaas.json', function (req, res) {
   res.status(200).send(smaasJSON);
 });
 
-app.get('/api/v1/:StateChartName/:InstanceId/_viz', provider.instanceViz);
-app.get('/api/v1/:StateChartName/_viz', provider.statechartViz);
-app.all('/api/v1/:StateChartName/_handlers/:HandlerName/*', provider.httpHandlerAction);
+app.get('/api/v1/:StateChartName/:InstanceId/_viz', api.instanceViz);
+app.get('/api/v1/:StateChartName/_viz', api.statechartViz);
+app.all('/api/v1/:StateChartName/_handlers/:HandlerName/*', api.httpHandlerAction);
 
 Object.keys(smaasJSON.paths).forEach(function(endpointPath){
   var endpoint = smaasJSON.paths[endpointPath];
@@ -48,19 +53,19 @@ Object.keys(smaasJSON.paths).forEach(function(endpointPath){
 
     switch(methodName) {
       case 'get': {
-        app.get(actualPath, provider[method.operationId]);
+        app.get(actualPath, api[method.operationId]);
         break;
       }
       case 'post': {
-        app.post(actualPath, provider[method.operationId]);
+        app.post(actualPath, api[method.operationId]);
         break;
       }
       case 'put': {
-        app.put(actualPath, provider[method.operationId]);
+        app.put(actualPath, api[method.operationId]);
         break;
       }
       case 'delete': {
-        app.delete(actualPath, provider[method.operationId]);
+        app.delete(actualPath, api[method.operationId]);
         break;
       }
       default:{
@@ -74,10 +79,11 @@ app.use(function(req, res, next) {
   res.status(404).send('Can\'t find ' + req.path);
 });
 
-app.listen(port);
-
 if(require.main === module) {
-  app.listen(port);
+  console.log('Starting server on port:', port);
+  app.listen(port, function () {
+    console.log('Server started');
+  });
 } else {
   module.exports = app;  
 }
