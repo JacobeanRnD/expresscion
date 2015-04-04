@@ -9,11 +9,11 @@ var express = require('express'),
   api = require('./providers/common/api');
 
 // TODO: Parameterize this so we can use npm install scxmld-docker plug-in.
-var database = require('./providers/databases/in-memory-db');
+var database = require('./providers/databases/in-memory-db')();
 var simulationServer = require('./providers/stateful/simple')(database);
 
 // Initialize the api
-api = api(simulationServer, database());
+api = api(simulationServer, database);
 
 var smaasJSON = yaml.safeLoad(fs.readFileSync(__dirname + '/smaas.yml','utf8'));
 
