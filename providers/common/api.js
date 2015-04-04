@@ -6,15 +6,9 @@ var async = require('async');
 var validate = require('./validate-scxml').validateCreateScxmlRequest;
 var sse = require('./sse');
 
-
-var definitions = {};
-var compiledDefinitions = {};
-var definitionToInstances = {};
 var statechartDefinitionSubscriptions = {};
-var events = {};
-var httpHandlers = {};
 
-module.exports = function (simulation, database) {
+module.exports = function (simulation, db) {
   var api = {};
 
   function createStatechartDefinition(req, res, scName) {
@@ -41,18 +35,12 @@ module.exports = function (simulation, database) {
 
         var chartName = scName || model().name || uuid.v1();
 
-        definitions[chartName] = scxmlString;
-        compiledDefinitions[chartName] = model;
-        definitionToInstances[chartName] = [];
+        db.saveStatechart(chartName, scxmlString, model, handler, function () {
+          res.setHeader('Location', chartName);
+          res.sendStatus(201);
 
-        if(handler) {
-          httpHandlers[chartName] = handler;
-        }
-
-        broadcastDefinitionChange(chartName);
-
-        res.setHeader('Location', chartName);
-        res.sendStatus(201);
+          broadcastDefinitionChange(chartName);  
+        });
       });
     });
   }
@@ -67,17 +55,18 @@ module.exports = function (simulation, database) {
 
   function createInstance(chartName, instanceId, done){
     instanceId = chartName  + '/' + (instanceId || uuid.v1());
-    var model = compiledDefinitions[chartName];
 
-    if(!model) return done({ error: { statusCode: 404 } });
+    db.getStatechart(chartName, function (err, scxml, model) {
+      if(!model) return done({ error: { statusCode: 404 } });
 
-    simulation.createInstance(instanceId, model, function (err, instance) {
-      simulation.startInstance(instanceId, function (initialConfiguration) {
-        //update data stores
-        var map = definitionToInstances[chartName] = definitionToInstances[chartName] || [];
-        map.push(instance.id);
+      simulation.createInstance(instanceId, model, function (err) {
+        // TODO: maybe save here?
 
-        done(err, instanceId, initialConfiguration);
+        simulation.startInstance(instanceId, function (initialConfiguration) {
+          db.saveInstance(chartName, instanceId, function () {
+            done(err, instanceId, initialConfiguration);
+          });
+        });
       });
     });
   }
@@ -98,64 +87,71 @@ module.exports = function (simulation, database) {
   };
 
   api.getStatechartDefinitions = function(req, res){
-    res.json(Object.keys(definitions));
+    db.getStatechartList(function (list) {
+      res.send(list);
+    });
   };
 
   api.getStatechartDefinition = function(req, res){
-    //1. fetch statechart definition
     var chartName = req.params.StateChartName;
 
-    var model = definitions[chartName];
-    
-    if(!model) return res.sendStatus(404);
+    db.getStatechart(chartName, function (err, scxml) {
+      if(!scxml) return res.sendStatus(404);
 
-    res.status(200).send(model);
+      res.status(200).send(scxml);
+    });
   };
 
   api.deleteStatechartDefinition = function(req, res){
     var chartName = req.params.StateChartName;
 
-    if(!definitions[chartName]) return res.sendStatus(404);
-
-    simulation.deleteStatechart(function (err) {
+    // Delete the statechart object in simulation
+    simulation.deleteStatechart(chartName, function (err) {
       if(err) return res.status(500).send(err);
 
-      async.eachSeries(definitionToInstances[chartName], function (instanceId, done) {
-        deleteInstance (chartName, instanceId, done);
-      }, function () {
-        var success = delete definitions[chartName];
-        delete definitionToInstances[chartName];  
+      // Get list of instances
+      db.getInstances(chartName, function (instances) {
+        async.eachSeries(instances, function (instanceId, done) {
+          // Delete each instance object in simulation
+          deleteInstance (chartName, instanceId, function () {
+            // Delete each instance from db
+            db.deleteInstance(chartName, instanceId, done);
+          });
+        }, function () {
+          // Delete statechart from db
+          db.deleteStatechart(chartName, function (err) {
+            if(err) return res.status(err.statusCode || 500).send(err.message);
 
-        if(success){
-          res.sendStatus(200);
-        }else{
-          res.sendStatus(404);
-        }
+            res.sendStatus(200);
+          });
+        });
       });
     });
   };
 
-  api.getInstances = function(req, res){
+  api.getInstances = function(req, res) {
     var chartName = req.params.StateChartName;
-      
-    if(!definitions[chartName]) return res.sendStatus(404);
 
-    res.status(200).send(definitionToInstances[chartName]);
+    db.getStatechart(chartName, function (err, scxml, model, instances) {
+      res.send(instances);
+    });
   };
 
   api.getStatechartDefinitionChanges = function(req, res){
     var chartName = req.params.StateChartName;
 
-    if(!definitions[chartName]) return res.sendStatus(404);
+    db.getStatechart(chartName, function (err, scxml) {
+      if(!scxml) return res.sendStatus(404);
 
-    var statechartDefinitionSubscription = 
-      statechartDefinitionSubscriptions[chartName] = 
-        statechartDefinitionSubscriptions[chartName] || [];
-    statechartDefinitionSubscription.push(res);
+      var statechartDefinitionSubscription = 
+        statechartDefinitionSubscriptions[chartName] = 
+          statechartDefinitionSubscriptions[chartName] || [];
+      statechartDefinitionSubscription.push(res);
 
-    sse.initStream(req, res, function(){
-      statechartDefinitionSubscription.splice(
-        statechartDefinitionSubscription.indexOf(res), 1);
+      sse.initStream(req, res, function(){
+        statechartDefinitionSubscription.splice(
+          statechartDefinitionSubscription.indexOf(res), 1);
+      });
     });
   };
 
@@ -171,21 +167,19 @@ module.exports = function (simulation, database) {
   };
 
   function sendEvent (instanceId, event, done) {
-    if(!events[instanceId]) events[instanceId] = [];
-
     simulation.sendEvent(instanceId, event, function (err, conf) {
       if(err) return done(err);
 
       simulation.getInstanceSnapshot(instanceId, function (err, snapshot) {
         if(err) return done(err);
         
-        events[instanceId].push({
+        db.saveEvent(instanceId, {
           timestamp: new Date(),
           event: event,
           resultSnapshot: snapshot
+        }, function () {
+          done(null, conf);
         });
-
-        done(err, conf);
       });
     });
   }
@@ -213,10 +207,7 @@ module.exports = function (simulation, database) {
     simulation.deleteInstance(instanceId, function (err) {
       if(err) return done(err);
 
-      var arr = definitionToInstances[chartName];
-      arr.splice(arr.indexOf(instanceId), 1);
-
-      done();
+      db.deleteInstance(chartName, instanceId, done);
     });
   }
 
@@ -256,21 +247,27 @@ module.exports = function (simulation, database) {
   };
 
   api.instanceViz = function (req, res) {
-    // var chartName = req.params.StateChartName,
-    //   instanceId = chartName + '/' + req.params.InstanceId;
+    var chartName = req.params.StateChartName,
+      instanceId = chartName + '/' + req.params.InstanceId;
 
-    res.render('viz.html', {
-      type: 'instance'
+    db.getInstance(chartName, instanceId, function (err, exists) {
+      if(!exists) return res.sendStatus(404);
+
+      res.render('viz.html', {
+        type: 'instance'
+      });
     });
   };
 
   api.statechartViz = function (req, res) {
     var chartName = req.params.StateChartName;
 
-    if(!definitions[chartName]) return res.sendStatus(404);
+    db.getStatechart(chartName, function (err, scxml) {
+      if(!scxml) return res.sendStatus(404);
 
-    res.render('viz.html', {
-      type: 'statechart'
+      res.render('viz.html', {
+        type: 'statechart'
+      });
     });
   };
 

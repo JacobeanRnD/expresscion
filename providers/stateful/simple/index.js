@@ -4,6 +4,8 @@ var scxml = require('scxml');
 
 var instances = {};
 
+// Consider initializing the module to be async. 
+
 module.exports.createStatechart = function (scxmlString, done) {
   scxml.documentStringToModel(null, scxmlString, done);
 };
@@ -14,7 +16,7 @@ module.exports.createInstance = function (id, model, done) {
   
   instances[instance.id] = instance;
 
-  done(null, instance);
+  done(null);
 };
 
 module.exports.startInstance = function (id, done) {
@@ -55,11 +57,12 @@ module.exports.unregisterListener = function (id, listener, done) {
 
 module.exports.deleteStatechart = function (name, done) {
   // Simple server doesn't need to delete anything on simulation side
-  done(null);
+  done();
 };
 
 module.exports.deleteInstance = function (id, done) {
-  // Simple server doesn't need to delete anything on simulation side
-  done(null);
+  delete instances[id];
+
+  done();
 };
 
