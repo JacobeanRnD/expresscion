@@ -50,18 +50,31 @@ module.exports = function () {
     done(null, conf);
   };
 
-  server.registerListener = function (id, listener, done) {
+  server.registerListener = function (id, response, done) {
     var instance = instances[id];
 
-    instance.registerListener(listener);
+    instance.listener = {
+      onEntry : function(stateId){
+        response.write('event: onEntry\n');
+        response.write('data: ' + stateId + '\n\n');
+      },
+      onExit : function(stateId){
+        response.write('event: onExit\n');
+        response.write('data: ' + stateId + '\n\n');
+      }
+      //TODO: spec this out
+      // onTransition : function(sourceStateId,targetStatesIds){}
+    };
+
+    instance.registerListener(instance.listener);
 
     done();
   };
 
-  server.unregisterListener = function (id, listener, done) {
+  server.unregisterListener = function (id, done) {
     var instance = instances[id];
 
-    instance.unregisterListener(listener);
+    instance.unregisterListener(instance.listener);
 
     if(done) done();
   };
