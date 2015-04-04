@@ -1,9 +1,7 @@
+'use strict';
+
 var scxml = require('scxml');
 var uuid = require('uuid');
-var fs = require('fs');
-var path = require('path');
-var validate = require('../../common/validate-scxml').validateCreateScxmlRequest;
-var sse = require('../../common/sse');
 var docker = require('./docker');
 var archiver = require('archiver');
 var http = require('http');
@@ -24,8 +22,11 @@ module.exports = function(db){
 
   var api = {};
 
-  api.createStatechart = function (scxmlString, done) {
+  api.createStatechart = function (scName, scxmlString, done) {
     scxml.documentStringToModel(null, scxmlString, function(err, model){
+      if(err) return done(err);
+
+      var archive = archiver.create('tar');
       var chartName = scName || model.name || uuid.v1();
 
       var compiledModuleStr = 'module.exports = ' + model.toString() + ';';
@@ -34,14 +35,14 @@ module.exports = function(db){
       archive.append(compiledModuleStr, {name : compiledScxmlModuleName}); 
 
       docker.buildImage(archive, {t: chartName, isStream : true}, function (err, response){
-        return done(err);
+        if(err) return done(err);
 
         var str = '';
         response.on('data',function(s){
           str += s.toString(); 
         });
         response.on('end',function(){
-          done();
+          done(null, chartName);
         });
 
         //TODO: broadcastDefinitionChange(scxmlString);
@@ -52,39 +53,40 @@ module.exports = function(db){
   };
 
 
-  api.createInstance = function (chartName, done) {
+  api.createInstance = function (chartName, maybeInstanceId, done) {
     //create a container
     createSandbox({image: chartName}, function (err, sandbox, initialSnapshot) {
-      return done(err);
+      if(err) return done(err);
 
       var instanceId = maybeInstanceId || sandbox.id || uuid.v1();
       var instanceLocation = chartName  + '/' + instanceId;
 
       db.set(instanceLocation, JSON.stringify(sandbox), function(err){
-        return done(err);
+        if(err) return done(err);
 
-        done(null, instanceId);
+        done(null, instanceLocation);
       });
     }); 
   };
 
 
-  module.exports.startInstance = function (id, done) {
+  api.startInstance = function (id, done) {
+    console.log('here1',id);
     getContainerInfo(id, function(err, containerInfo){
       if(err) return done(err);
       request({
         url : 'http://' + containerInfo.ip + ':3000/start',
-        method : 'POST',
-        json : event
+        method : 'POST'
       },function(err, response, body){
         if(err) return done(err);
 
+        console.log('here2', body);
         return done(null, body);
       });
     });
   };
 
-  module.exports.getInstanceSnapshot = function (id, done) {
+  api.getInstanceSnapshot = function (id, done) {
     getContainerInfo(id, function(err, containerInfo){
       if(err) return done(err);
       request({
@@ -116,7 +118,7 @@ module.exports = function(db){
   function getContainerInfo(id, done){
     db.get(id,function(err, containerInfoStr){
       if(err) return done(err);
-      if(!containerInfoStr) return done({'message':'Cannot find container info for instance'}
+      if(!containerInfoStr) return done({'message':'Cannot find container info for instance'});
       try {
         var containerInfo = JSON.parse(containerInfoStr);
       } catch(e){

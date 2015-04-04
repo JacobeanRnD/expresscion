@@ -1,7 +1,5 @@
 'use strict';
 
-var uuid = require('uuid');
-var vm = require('vm');
 var async = require('async');
 var validate = require('./validate-scxml').validateCreateScxmlRequest;
 var sse = require('./sse');
@@ -30,12 +28,10 @@ module.exports = function (simulation, db) {
 
       if(errors) return res.status(400).send({ name : 'error.create', data : errors });
 
-      simulation.createStatechart(scxmlString, function (err, model) {
+      simulation.createStatechart(scName, scxmlString, function (err, chartName) {
         if(err) return res.status(500).send(err);
 
-        var chartName = scName || model().name || uuid.v1();
-
-        db.saveStatechart(chartName, scxmlString, model, handler, function () {
+        db.saveStatechart(chartName, scxmlString, handler, function () {
           res.setHeader('Location', chartName);
           res.sendStatus(201);
 
@@ -54,12 +50,10 @@ module.exports = function (simulation, db) {
   };
 
   function createInstance(chartName, instanceId, done){
-    instanceId = chartName  + '/' + (instanceId || uuid.v1());
+    db.getStatechart(chartName, function (err, scxml) {
+      if(!scxml) return done({ error: { statusCode: 404 } });
 
-    db.getStatechart(chartName, function (err, scxml, model) {
-      if(!model) return done({ error: { statusCode: 404 } });
-
-      simulation.createInstance(instanceId, model, function () {
+      simulation.createInstance(chartName, instanceId, function (err, instanceId) {
         // TODO: maybe save here?
 
         simulation.startInstance(instanceId, function (err, initialConfiguration) {
@@ -76,7 +70,9 @@ module.exports = function (simulation, db) {
   };
 
   api.createNamedInstance = function(req, res){
-    createInstance(req.params.StateChartName, req.params.InstanceId, function (err, instanceId, initialConfiguration) {
+    var chartName = req.params.StateChartName;
+
+    createInstance(chartName, req.params.InstanceId, function (err, instanceId, initialConfiguration) {
       if(err) return res.status(err.statusCode || 500).send(err.message);
 
       res.setHeader('Location', instanceId);
@@ -132,7 +128,7 @@ module.exports = function (simulation, db) {
   api.getInstances = function(req, res) {
     var chartName = req.params.StateChartName;
 
-    db.getStatechart(chartName, function (err, scxml, model, instances) {
+    db.getStatechart(chartName, function (err, scxml, instances) {
       res.send(instances);
     });
   };
@@ -156,8 +152,7 @@ module.exports = function (simulation, db) {
   };
 
   api.getInstance = function(req, res){
-    var chartName = req.params.StateChartName,
-      instanceId = chartName + '/' + req.params.InstanceId;
+    var instanceId = getInstanceId(req);
         
       simulation.getInstanceSnapshot(instanceId, function (err, snapshot) {
         if(err) return res.status(err.statusCode || 500).send(err.message);
@@ -185,8 +180,7 @@ module.exports = function (simulation, db) {
   }
 
   api.sendEvent = function(req, res){
-    var chartName = req.params.StateChartName,
-      instanceId = chartName + '/' + req.params.InstanceId,
+    var instanceId = getInstanceId(req),
       event;
 
     try {
@@ -213,7 +207,7 @@ module.exports = function (simulation, db) {
 
   api.deleteInstance = function(req, res){
     var chartName = req.params.StateChartName,
-      instanceId = chartName + '/' + req.params.InstanceId;
+      instanceId = getInstanceId(req);
 
     deleteInstance(chartName, instanceId, function (err) {
       if(err) return res.status(err.statusCode || 500).send(err.message);
@@ -223,32 +217,18 @@ module.exports = function (simulation, db) {
   };
 
   api.getInstanceChanges = function(req, res){
-    var chartName = req.params.StateChartName,
-      instanceId = chartName + '/' + req.params.InstanceId;
+    var instanceId = getInstanceId(req);
 
-    var listener = {
-      onEntry : function(stateId){
-        res.write('event: onEntry\n');
-        res.write('data: ' + stateId + '\n\n');
-      },
-      onExit : function(stateId){
-        res.write('event: onExit\n');
-        res.write('data: ' + stateId + '\n\n');
-      }
-      //TODO: spec this out
-      // onTransition : function(sourceStateId,targetStatesIds){}
-    };
-
-    simulation.registerListener(instanceId, listener, function () {
+    simulation.registerListener(instanceId, res, function () {
       sse.initStream(req, res, function(){
-        simulation.unregisterListener(instanceId, listener);
+        simulation.unregisterListener(instanceId);
       });
     });
   };
 
   api.instanceViz = function (req, res) {
     var chartName = req.params.StateChartName,
-      instanceId = chartName + '/' + req.params.InstanceId;
+      instanceId = getInstanceId(req);
 
     db.getInstance(chartName, instanceId, function (err, exists) {
       if(!exists) return res.sendStatus(404);
@@ -272,8 +252,7 @@ module.exports = function (simulation, db) {
   };
 
   api.getEventLog = function (req, res) {
-    var chartName = req.params.StateChartName,
-      instanceId = chartName + '/' + req.params.InstanceId;
+    var instanceId = getInstanceId(req);
 
     var events = events[instanceId];
 
@@ -281,48 +260,6 @@ module.exports = function (simulation, db) {
 
     res.status(200).send(events);
   };
-
-  api.httpHandlerAction = function (req, res) {
-    var chartName = req.params.StateChartName,
-      handlerName = req.params.HandlerName;
-
-    if(httpHandlers[chartName] && httpHandlers[chartName][handlerName]) {
-      var httpHandler = httpHandlers[chartName][handlerName];
-
-      var vmContext = {
-        req: req,
-        res: res,
-        chartName: chartName,
-        console: console,
-        require: require,
-        scxml: {
-          getInstance: function (id) {
-            var instance = getInstance(normalizeInstanceId(chartName, id));
-            return instance.error ? null : instance.getSnapshot();
-          },
-          createInstance: function (id) {
-            var instanceResult = createInstance(chartName, id);
-            return instanceResult.error ? null : instanceResult.id;
-          },
-          deleteInstance: function (id) {
-            return deleteInstance(chartName, normalizeInstanceId(chartName, id));
-          },
-          send: function (id, event) {
-            return sendEvent(normalizeInstanceId(chartName, id), event);
-          }
-        }
-      };
-
-      vm.createContext(vmContext);
-      vm.runInContext('(' + httpHandler + '());', vmContext);
-    } else {
-      res.sendStatus(404);
-    }
-  };
-
-  function normalizeInstanceId (chartName, id) {
-    return id.indexOf(chartName + '/') !== 0 ? (chartName + '/' + id) : id;
-  }
 
   function broadcastDefinitionChange(chartName){
     var statechartDefinitionSubscription = statechartDefinitionSubscriptions[chartName];
@@ -332,6 +269,10 @@ module.exports = function (simulation, db) {
         response.write('data:\n\n');
       });
     }
+  }
+
+  function getInstanceId (req) {
+    return req.params.StateChartName + '/' + req.params.InstanceId;
   }
 
   return api;

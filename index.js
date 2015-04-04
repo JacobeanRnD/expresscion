@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-var express = require("express"),
-  url = require("url"),
-  cors = require("cors"),
+var express = require('express'),
   path = require('path'),
   fs = require('fs'),
   yaml = require('js-yaml'),
@@ -11,11 +9,11 @@ var express = require("express"),
   api = require('./providers/common/api');
 
 // TODO: Parameterize this so we can use npm install scxmld-docker plug-in.
-var simulationServer = require('./providers/stateful/docker');
-var database = require('./providers/common/in-memory-db');
+var database = require('./providers/databases/in-memory-db')();
+var simulationServer = require('./providers/stateful/docker')(database);
 
 // Initialize the api
-api = api(simulationServer, database());
+api = api(simulationServer, database);
 
 var smaasJSON = yaml.safeLoad(fs.readFileSync(__dirname + '/smaas.yml','utf8'));
 
@@ -42,7 +40,6 @@ app.get('/smaas.json', function (req, res) {
 
 app.get('/api/v1/:StateChartName/:InstanceId/_viz', api.instanceViz);
 app.get('/api/v1/:StateChartName/_viz', api.statechartViz);
-app.all('/api/v1/:StateChartName/_handlers/:HandlerName/*', api.httpHandlerAction);
 
 function methodNotImplementedMiddleware(req, res){
   return res.send(501, {message : "Not implemented"});
@@ -80,7 +77,7 @@ Object.keys(smaasJSON.paths).forEach(function(endpointPath){
   });
 });
 
-app.use(function(req, res, next) {
+app.use(function(req, res) {
   res.status(404).send('Can\'t find ' + req.path);
 });
 

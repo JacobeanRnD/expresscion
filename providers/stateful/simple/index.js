@@ -1,70 +1,95 @@
 'use strict';
 
-var scxml = require('scxml');
+var scxml = require('scxml'),
+  uuid = require('uuid');
 
+var models = {};
 var instances = {};
 
-// Consider initializing the module to be async. 
+module.exports = function () {
+  var server = {};
 
-module.exports.createStatechart = function (scxmlString, done) {
-  scxml.documentStringToModel(null, scxmlString, done);
+  server.createStatechart = function (scName, scxmlString, done) {
+    scxml.documentStringToModel(null, scxmlString, function (err, model) {
+      var chartName = scName || model().name || uuid.v1();
+
+      models[chartName] = model;
+
+      done(err, chartName);
+    });
+  };
+
+  server.createInstance = function (chartName, id, done) {
+    var instance = new scxml.scion.Statechart(models[chartName]);
+    instance.id = chartName + '/' + (id || uuid.v1());
+    
+    instances[instance.id] = instance;
+
+    done(null, instance.id);
+  };
+
+  server.startInstance = function (id, done) {
+    var instance = instances[id];
+
+    var conf = instance.start();
+
+    done(null, conf);
+  };
+
+  server.getInstanceSnapshot = function (id, done) {
+    var instance = instances[id];
+
+    done(null, instance.getSnapshot());
+  };
+
+  server.sendEvent = function (id, event, done) {
+    var instance = instances[id];
+
+    var conf = instance.gen(event);
+
+    done(null, conf);
+  };
+
+  server.registerListener = function (id, response, done) {
+    var instance = instances[id];
+
+    instance.listener = {
+      onEntry : function(stateId){
+        response.write('event: onEntry\n');
+        response.write('data: ' + stateId + '\n\n');
+      },
+      onExit : function(stateId){
+        response.write('event: onExit\n');
+        response.write('data: ' + stateId + '\n\n');
+      }
+      //TODO: spec this out
+      // onTransition : function(sourceStateId,targetStatesIds){}
+    };
+
+    instance.registerListener(instance.listener);
+
+    done();
+  };
+
+  server.unregisterListener = function (id, done) {
+    var instance = instances[id];
+
+    instance.unregisterListener(instance.listener);
+
+    if(done) done();
+  };
+
+  server.deleteStatechart = function (chartName, done) {
+    var success = delete models[chartName];
+
+    done(null, success);
+  };
+
+  server.deleteInstance = function (id, done) {
+    delete instances[id];
+
+    done();
+  };
+
+  return server;
 };
-
-module.exports.createInstance = function (id, model, done) {
-  var instance = new scxml.scion.Statechart(model);
-  instance.id = id;
-  
-  instances[instance.id] = instance;
-
-  done(null);
-};
-
-module.exports.startInstance = function (id, done) {
-  var instance = instances[id];
-
-  var conf = instance.start();
-
-  done(null, conf);
-};
-
-module.exports.getInstanceSnapshot = function (id, done) {
-  var instance = instances[id];
-
-  done(null, instance.getSnapshot());
-};
-
-module.exports.sendEvent = function (id, event, done) {
-  var instance = instances[id];
-
-  var conf = instance.gen(event);
-
-  done(null, conf);
-};
-
-module.exports.registerListener = function (id, listener, done) {
-  var instance = instances[id];
-
-  instance.registerListener(listener);
-
-  done();
-};
-
-module.exports.unregisterListener = function (id, listener, done) {
-  var instance = instances[id];
-
-  instance.unregisterListener(listener);
-
-  if(done) done();
-};
-
-module.exports.deleteStatechart = function (name, done) {
-  // Simple server doesn't need to delete anything on simulation side
-  done();
-};
-
-module.exports.deleteInstance = function (id, done) {
-  delete instances[id];
-
-  done();
-};
-
