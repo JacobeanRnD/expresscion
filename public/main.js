@@ -1,9 +1,8 @@
 'use strict';
 // jshint: window: true
+/* global alert,EventSource, $, vizType, _, window, DOMParser */
 
 $(function() {
-  /* global alert,EventSource, $, vizType, _ */
-  
   var statechartUrl = '../';
   var statechartChangesUrl = '../_changes';
 
@@ -21,6 +20,7 @@ $(function() {
   var updateLayout = _.debounce(function() {
     layout.invalidateSize();
   }, 500);
+
   window.addEventListener('resize', updateLayout, false);
 
   getScxml();
