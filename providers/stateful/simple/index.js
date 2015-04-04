@@ -37,6 +37,22 @@ module.exports.sendEvent = function (id, event, done) {
   done(null, conf);
 };
 
+module.exports.registerListener = function (id, listener, done) {
+  var instance = instances[id];
+
+  instance.registerListener(listener);
+
+  done();
+};
+
+module.exports.unregisterListener = function (id, listener, done) {
+  var instance = instances[id];
+
+  instance.unregisterListener(listener);
+
+  if(done) done();
+};
+
 module.exports.deleteStatechart = function (name, done) {
   // Simple server doesn't need to delete anything on simulation side
   done(null);
