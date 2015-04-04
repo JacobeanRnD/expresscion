@@ -219,22 +219,9 @@ module.exports = function (simulation, db) {
   api.getInstanceChanges = function(req, res){
     var instanceId = getInstanceId(req);
 
-    var listener = {
-      onEntry : function(stateId){
-        res.write('event: onEntry\n');
-        res.write('data: ' + stateId + '\n\n');
-      },
-      onExit : function(stateId){
-        res.write('event: onExit\n');
-        res.write('data: ' + stateId + '\n\n');
-      }
-      //TODO: spec this out
-      // onTransition : function(sourceStateId,targetStatesIds){}
-    };
-
-    simulation.registerListener(instanceId, listener, function () {
+    simulation.registerListener(instanceId, res, function () {
       sse.initStream(req, res, function(){
-        simulation.unregisterListener(instanceId, listener);
+        simulation.unregisterListener(instanceId);
       });
     });
   };
