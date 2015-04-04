@@ -1,22 +1,30 @@
 'use strict';
 
-var scxml = require('scxml');
+var scxml = require('scxml'),
+  uuid = require('uuid');
 
+var models = {};
 var instances = {};
 
 // Consider initializing the module to be async. 
 
-module.exports.createStatechart = function (scxmlString, done) {
-  scxml.documentStringToModel(null, scxmlString, done);
+module.exports.createStatechart = function (scName, scxmlString, done) {
+  scxml.documentStringToModel(null, scxmlString, function (err, model) {
+    var chartName = scName || model().name || uuid.v1();
+
+    models[chartName] = model;
+
+    done(err, chartName);
+  });
 };
 
-module.exports.createInstance = function (id, model, done) {
-  var instance = new scxml.scion.Statechart(model);
-  instance.id = id;
+module.exports.createInstance = function (chartName, id, done) {
+  var instance = new scxml.scion.Statechart(models[chartName]);
+  instance.id = chartName + '/' + (id || uuid.v1());
   
   instances[instance.id] = instance;
 
-  done(null);
+  done(null, instance.id);
 };
 
 module.exports.startInstance = function (id, done) {

@@ -1,6 +1,5 @@
 'use strict';
 
-var uuid = require('uuid');
 var async = require('async');
 var validate = require('./validate-scxml').validateCreateScxmlRequest;
 var sse = require('./sse');
@@ -29,12 +28,10 @@ module.exports = function (simulation, db) {
 
       if(errors) return res.status(400).send({ name : 'error.create', data : errors });
 
-      simulation.createStatechart(scxmlString, function (err, model) {
+      simulation.createStatechart(scName, scxmlString, function (err, chartName) {
         if(err) return res.status(500).send(err);
 
-        var chartName = scName || model().name || uuid.v1();
-
-        db.saveStatechart(chartName, scxmlString, model, handler, function () {
+        db.saveStatechart(chartName, scxmlString, handler, function () {
           res.setHeader('Location', chartName);
           res.sendStatus(201);
 
@@ -53,10 +50,10 @@ module.exports = function (simulation, db) {
   };
 
   function createInstance(chartName, instanceId, done){
-    db.getStatechart(chartName, function (err, scxml, model) {
-      if(!model) return done({ error: { statusCode: 404 } });
+    db.getStatechart(chartName, function (err, scxml) {
+      if(!scxml) return done({ error: { statusCode: 404 } });
 
-      simulation.createInstance(instanceId, model, function () {
+      simulation.createInstance(chartName, instanceId, function (err, instanceId) {
         // TODO: maybe save here?
 
         simulation.startInstance(instanceId, function (err, initialConfiguration) {
@@ -73,10 +70,9 @@ module.exports = function (simulation, db) {
   };
 
   api.createNamedInstance = function(req, res){
-    var chartName = req.params.StateChartName,
-      instanceId = chartName  + '/' + (req.params.InstanceId || uuid.v1());
+    var chartName = req.params.StateChartName;
 
-    createInstance(chartName, instanceId, function (err, instanceId, initialConfiguration) {
+    createInstance(chartName, req.params.InstanceId, function (err, instanceId, initialConfiguration) {
       if(err) return res.status(err.statusCode || 500).send(err.message);
 
       res.setHeader('Location', instanceId);
@@ -132,7 +128,7 @@ module.exports = function (simulation, db) {
   api.getInstances = function(req, res) {
     var chartName = req.params.StateChartName;
 
-    db.getStatechart(chartName, function (err, scxml, model, instances) {
+    db.getStatechart(chartName, function (err, scxml, instances) {
       res.send(instances);
     });
   };

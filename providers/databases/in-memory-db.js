@@ -6,14 +6,12 @@ module.exports = function (opts) {
 
   var db = {},
     definitions = {},
-    compiledDefinitions = {},
     definitionToInstances = {},
     events = {},
     httpHandlers = {};
     
-  db.saveStatechart = function (name, scxmlString, model, handler, done) {
+  db.saveStatechart = function (name, scxmlString, handler, done) {
     definitions[name] = scxmlString;
-    compiledDefinitions[name] = model;
     definitionToInstances[name] = [];
 
     if(handler) {
@@ -24,7 +22,7 @@ module.exports = function (opts) {
   };
 
   db.getStatechart = function (name, done) {
-    done(null, definitions[name], compiledDefinitions[name], definitionToInstances[name], httpHandlers[name]);
+    done(null, definitions[name], definitionToInstances[name], httpHandlers[name]);
   };
 
   db.deleteStatechart = function (chartName, done) {
