@@ -22,7 +22,9 @@ module.exports.createInstance = function (id, model, done) {
 module.exports.startInstance = function (id, done) {
   var instance = instances[id];
 
-  done(null, instance.start());
+  var conf = instance.start();
+
+  done(null, conf);
 };
 
 module.exports.getInstanceSnapshot = function (id, done) {
