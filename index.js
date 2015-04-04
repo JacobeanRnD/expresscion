@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+'use strict';
 
 var express = require("express"),
   url = require("url"),
@@ -6,8 +7,10 @@ var express = require("express"),
   path = require('path'),
   fs = require('fs'),
   yaml = require('js-yaml'),
-  provider = require('./providers/stateful/simple'),
   app = express();
+
+// TODO: Parameterize this so we can use npm install scxmld-docker plug-in.
+var simulationServer = require('./providers/stateful/simple');
 
 var smaasJSON = yaml.safeLoad(fs.readFileSync(__dirname + '/smaas.yml','utf8'));
 
