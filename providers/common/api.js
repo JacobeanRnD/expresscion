@@ -235,10 +235,6 @@ module.exports = function (simulation, database) {
     var chartName = req.params.StateChartName,
       instanceId = chartName + '/' + req.params.InstanceId;
 
-    var instance = instances[instanceId];
-
-    if(!instance) return res.sendStatus(404);
-
     var listener = {
       onEntry : function(stateId){
         res.write('event: onEntry\n');
@@ -252,20 +248,16 @@ module.exports = function (simulation, database) {
       // onTransition : function(sourceStateId,targetStatesIds){}
     };
 
-    instance.registerListener(listener);
-
-    sse.initStream(req, res, function(){
-      instance.unregisterListener(listener);
+    simulation.registerListener(instanceId, listener, function () {
+      sse.initStream(req, res, function(){
+        simulation.unregisterListener(instanceId, listener);
+      });
     });
   };
 
   api.instanceViz = function (req, res) {
-    var chartName = req.params.StateChartName,
-      instanceId = chartName + '/' + req.params.InstanceId;
-
-    var instance = instances[instanceId];
-
-    if(!instance) return res.sendStatus(404);
+    // var chartName = req.params.StateChartName,
+    //   instanceId = chartName + '/' + req.params.InstanceId;
 
     res.render('viz.html', {
       type: 'instance'
@@ -286,11 +278,11 @@ module.exports = function (simulation, database) {
     var chartName = req.params.StateChartName,
       instanceId = chartName + '/' + req.params.InstanceId;
 
-    var instance = instances[instanceId];
+    var events = events[instanceId];
 
-    if(!instance) return res.sendStatus(404);
+    if(!events) return res.sendStatus(404);
 
-    res.status(200).send(events[instanceId]);
+    res.status(200).send(events);
   };
 
   api.httpHandlerAction = function (req, res) {
