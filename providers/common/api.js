@@ -10,13 +10,12 @@ module.exports = function (simulation, db) {
   var api = {};
 
   function createStatechartDefinition(req, res, scName) {
-    var scxmlString, handler;
+    var scxmlString;
 
     if(req.headers['content-type'] === 'application/json') {
       try {
         var body = JSON.parse(req.body);
         scxmlString = body.scxml;
-        handler = JSON.parse(body.handlers);
       } catch(e) {
         return res.status(400).send({ name : 'error.malformed.body', data : e.message });
       }
@@ -31,7 +30,7 @@ module.exports = function (simulation, db) {
       simulation.createStatechart(scName, scxmlString, function (err, chartName) {
         if(err) return res.status(500).send(err);
 
-        db.saveStatechart(chartName, scxmlString, handler, function () {
+        db.saveStatechart(chartName, scxmlString, function () {
           res.setHeader('Location', chartName);
           res.sendStatus(201);
 
@@ -83,7 +82,7 @@ module.exports = function (simulation, db) {
   };
 
   api.getStatechartDefinitions = function(req, res){
-    db.getStatechartList(function (list) {
+    db.getStatechartList(function (err, list) {
       res.send(list);
     });
   };
@@ -106,7 +105,7 @@ module.exports = function (simulation, db) {
       if(err) return res.status(500).send(err);
 
       // Get list of instances
-      db.getInstances(chartName, function (instances) {
+      db.getInstances(chartName, function (err, instances) {
         async.eachSeries(instances, function (instanceId, done) {
           // Delete each instance object in simulation
           deleteInstance (chartName, instanceId, function () {
@@ -128,7 +127,7 @@ module.exports = function (simulation, db) {
   api.getInstances = function(req, res) {
     var chartName = req.params.StateChartName;
 
-    db.getStatechart(chartName, function (err, scxml, instances) {
+    db.getInstances(chartName, function (err, instances) {
       res.send(instances);
     });
   };

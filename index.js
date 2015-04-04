@@ -9,8 +9,10 @@ var express = require('express'),
   api = require('./providers/common/api');
 
 // TODO: Parameterize this so we can use npm install scxmld-docker plug-in.
-var database = require('./providers/databases/in-memory-db')();
-var simulationServer = require('./providers/stateful/docker')(database);
+var database = require('./providers/databases/postgres-db')(function () {
+  console.log('Db initialized');
+});
+var simulationServer = require('./providers/stateful/simple')(database);
 
 // Initialize the api
 api = api(simulationServer, database);
@@ -42,7 +44,7 @@ app.get('/api/v1/:StateChartName/:InstanceId/_viz', api.instanceViz);
 app.get('/api/v1/:StateChartName/_viz', api.statechartViz);
 
 function methodNotImplementedMiddleware(req, res){
-  return res.send(501, {message : "Not implemented"});
+  return res.send(501, { message: 'Not implemented' });
 }
 
 Object.keys(smaasJSON.paths).forEach(function(endpointPath){
@@ -55,19 +57,19 @@ Object.keys(smaasJSON.paths).forEach(function(endpointPath){
     var handler = api[method.operationId] || methodNotImplementedMiddleware;
     switch(methodName) {
       case 'get': {
-        app.get(actualPath, api[method.operationId]);
+        app.get(actualPath, handler);
         break;
       }
       case 'post': {
-        app.post(actualPath, api[method.operationId]);
+        app.post(actualPath, handler);
         break;
       }
       case 'put': {
-        app.put(actualPath, api[method.operationId]);
+        app.put(actualPath, handler);
         break;
       }
       case 'delete': {
-        app.delete(actualPath, api[method.operationId]);
+        app.delete(actualPath, handler);
         break;
       }
       default:{

@@ -10,7 +10,7 @@ module.exports = function (opts) {
     events = {},
     metaInformation = {};
     
-  db.saveStatechart = function (name, scxmlString, handler, done) {
+  db.saveStatechart = function (name, scxmlString, done) {
     definitions[name] = scxmlString;
     definitionToInstances[name] = [];
 
@@ -18,7 +18,7 @@ module.exports = function (opts) {
   };
 
   db.getStatechart = function (name, done) {
-    done(null, definitions[name], definitionToInstances[name]);
+    done(null, definitions[name]);
   };
 
   db.deleteStatechart = function (chartName, done) {
@@ -28,7 +28,7 @@ module.exports = function (opts) {
   };
 
   db.getStatechartList = function (done) {
-    done(Object.keys(definitions));
+    done(null, Object.keys(definitions));
   };
 
   db.saveInstance = function (chartName, instanceId, done) {
@@ -47,7 +47,7 @@ module.exports = function (opts) {
   };
 
   db.getInstances = function (chartName, done) {
-    done(definitionToInstances[chartName]);
+    done(null, definitionToInstances[chartName]);
   };
 
   db.deleteInstance = function (chartName, instanceId, done) {
