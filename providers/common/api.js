@@ -59,10 +59,10 @@ module.exports = function (simulation, db) {
     db.getStatechart(chartName, function (err, scxml, model) {
       if(!model) return done({ error: { statusCode: 404 } });
 
-      simulation.createInstance(instanceId, model, function (err) {
+      simulation.createInstance(instanceId, model, function () {
         // TODO: maybe save here?
 
-        simulation.startInstance(instanceId, function (initialConfiguration) {
+        simulation.startInstance(instanceId, function (err, initialConfiguration) {
           db.saveInstance(chartName, instanceId, function () {
             done(err, instanceId, initialConfiguration);
           });
