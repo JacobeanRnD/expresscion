@@ -30,7 +30,9 @@ module.exports = function (simulation, db) {
       simulation.createStatechart(scName, scxmlString, function (err, chartName) {
         if(err) return res.status(500).send(err);
 
-        db.saveStatechart(chartName, scxmlString, function () {
+        db.saveStatechart(req.user, chartName, scxmlString, function (err) {
+          if(err) return res.status(500).send(err);
+
           res.setHeader('Location', chartName);
           res.sendStatus(201);
 
@@ -82,7 +84,7 @@ module.exports = function (simulation, db) {
   };
 
   api.getStatechartDefinitions = function(req, res){
-    db.getStatechartList(function (err, list) {
+    db.getStatechartList(req.user, function (err, list) {
       res.send(list);
     });
   };
@@ -171,8 +173,8 @@ module.exports = function (simulation, db) {
           timestamp: new Date(),
           event: event,
           resultSnapshot: snapshot
-        }, function () {
-          done(null, conf);
+        }, function (err) {
+          done(err, conf);
         });
       });
     });

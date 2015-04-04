@@ -21,6 +21,7 @@ module.exports = function (opts, initialized) {
     var schemas = [
       'CREATE TABLE IF NOT EXISTS ' +
       ' statecharts(name varchar primary key,' +
+      ' userid varchar default null,' +
       ' scxml varchar,' +
       ' created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW())',
 
@@ -30,11 +31,10 @@ module.exports = function (opts, initialized) {
       ' created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW())',
       
       'CREATE TABLE IF NOT EXISTS' + 
-      ' events(id uuid primary key default uuid_generate_v4(),' +
+      ' events(created TIMESTAMP WITH TIME ZONE primary key DEFAULT NOW(),' +
       ' instanceId varchar REFERENCES instances(id) ON DELETE CASCADE,' +
       ' event JSON,' +
-      ' snapshot JSON,' +
-      ' created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW())',
+      ' snapshot JSON)',
       
       'CREATE TABLE IF NOT EXISTS' +
       ' metainfo(key varchar primary key,' +
@@ -69,32 +69,51 @@ module.exports = function (opts, initialized) {
     });
   }
     
-  db.saveStatechart = function (name, scxmlString, done) {
-    query({
-      text: 'SELECT * FROM statecharts WHERE name = $1',
-      values: [name]
-    }, function (error, result) {
+  db.saveStatechart = function (user, name, scxmlString, done) {
+    var userId = null,
+      selectQuery = {
+        text: 'SELECT * FROM statecharts WHERE name = $1',
+        values: [name]
+      }, 
+      insertQuery = {
+        text: 'INSERT INTO statecharts (name, scxml) VALUES($1, $2)',
+        values: [name, scxmlString]
+      }, 
+      updateQuery = {
+        text: 'UPDATE statecharts SET scxml = $2 WHERE name = $1',
+        values: [name, scxmlString]
+      };
+
+
+    if(user && user.id) {
+      userId = user.id;
+
+      selectQuery = {
+        text: 'SELECT * FROM statecharts WHERE name = $1 AND userid = $2',
+        values: [name, userId]
+      };
+
+      insertQuery = {
+        text: 'INSERT INTO statecharts (name, scxml, userid) VALUES($1, $2, $3)',
+        values: [name, scxmlString, userId]
+      };
+
+      updateQuery = {
+        text: 'UPDATE statecharts SET scxml = $2 WHERE name = $1 AND userid = $3',
+        values: [name, scxmlString, userId]
+      };
+    }
+
+    query(selectQuery, function (error, result) {
       if(error) return done(error);
 
-      if(result.rowCount === 0) {
-        query({
-          text: 'INSERT INTO statecharts (name, scxml) VALUES($1, $2)',
-          values: [name, scxmlString]
-        }, function (error) {
-          if(error) return done(error);
+      var finalQuery = result.rowCount === 0 ? insertQuery : updateQuery;
 
-          done();
-        });
-      } else {
-        query({
-          text: 'UPDATE statecharts SET scxml = $1',
-          values: [scxmlString]
-        }, function (error) {
-          if(error) return done(error);
+      query(finalQuery, function (error, result) {
+        if(error) return done(error);
 
-          done();
-        });
-      }
+        done();
+      });
     });
   };
 
@@ -122,17 +141,29 @@ module.exports = function (opts, initialized) {
     });
   };
 
-  db.getStatechartList = function (done) {
-    query({
-      text: 'SELECT * FROM statecharts',
-      values: []
-    }, function (error, result) {
+  db.getStatechartList = function (user, done) {
+    var userId = null,
+      selectQuery = {
+        text: 'SELECT * FROM statecharts',
+        values: []
+      };
+
+    if(user && user.id) {
+      userId = user.id;
+
+      selectQuery = {
+        text: 'SELECT * FROM statecharts WHERE userid = $1',
+        values: [userId]
+      };
+    }
+
+    query(selectQuery, function (error, result) {
       if(error) return done(error);
       
       var statecharts = result.rows.map(function (statechart) {
         return statechart.name;          
       });
-      
+
       done(null, statecharts);
     });
   };
@@ -165,7 +196,6 @@ module.exports = function (opts, initialized) {
       values: [chartName]
     }, function (error, result) {
       if(error) return done(error);
-      console.log(result.rows);
 
       var instances = result.rows.map(function (instance) {
         return instance.id;          
@@ -189,7 +219,7 @@ module.exports = function (opts, initialized) {
   db.saveEvent = function (instanceId, details, done) {
     query({
       text: 'INSERT INTO events (instanceId, event, snapshot, created) VALUES($1, $2, $3, $4)',
-      values: [instanceId, details.event, details.resultSnapshot, details.timestamp]
+      values: [instanceId, JSON.stringify(details.event), JSON.stringify(details.resultSnapshot), details.timestamp]
     }, function (error) {
       if(error) return done(error);
 
