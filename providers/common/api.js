@@ -1,10 +1,11 @@
 'use strict';
 
-var scxml = require('scxml');
 var uuid = require('uuid');
 var vm = require('vm');
+var async = require('async');
 var validate = require('./validate-scxml').validateCreateScxmlRequest;
 var sse = require('./sse');
+
 
 var definitions = {};
 var compiledDefinitions = {};
@@ -119,18 +120,18 @@ module.exports = function (simulation, database) {
     simulation.deleteStatechart(function (err) {
       if(err) return res.status(500).send(err);
 
-      var success = delete definitions[chartName];
-      definitionToInstances[chartName].forEach(function(instanceId){
-        //TODO: stop running instances
-        delete instances[instanceId];
+      async.eachSeries(definitionToInstances[chartName], function (instanceId, done) {
+        deleteInstance (chartName, instanceId, done);
+      }, function () {
+        var success = delete definitions[chartName];
+        delete definitionToInstances[chartName];  
+
+        if(success){
+          res.sendStatus(200);
+        }else{
+          res.sendStatus(404);
+        }
       });
-      delete definitionToInstances[chartName];
-      
-      if(success){
-        res.sendStatus(200);
-      }else{
-        res.sendStatus(404);
-      }
     });
   };
 
@@ -169,22 +170,24 @@ module.exports = function (simulation, database) {
       });
   };
 
-  function sendEvent (instanceId, event) {
-    var instance = instances[instanceId];
-
-    if(!instance) return { error: { statusCode: 404 } };
-    
+  function sendEvent (instanceId, event, done) {
     if(!events[instanceId]) events[instanceId] = [];
 
-    var nextConfiguration = instance.gen(event); 
-    
-    events[instanceId].push({
-      timestamp: new Date(),
-      event: event,
-      resultSnapshot: instance.getSnapshot()
-    });
+    simulation.sendEvent(instanceId, event, function (err, conf) {
+      if(err) return done(err);
 
-    return nextConfiguration;
+      simulation.getInstanceSnapshot(instanceId, function (err, snapshot) {
+        if(err) return done(err);
+        
+        events[instanceId].push({
+          timestamp: new Date(),
+          event: event,
+          resultSnapshot: snapshot
+        });
+
+        done(err, conf);
+      });
+    });
   }
 
   api.sendEvent = function(req, res){
@@ -198,12 +201,12 @@ module.exports = function (simulation, database) {
       return res.status(400).send(e.message);
     }
 
-    var config = sendEvent(instanceId, event);
-    
-    if(config.error) return res.sendStatus(config.error.statusCode);
-
-    res.setHeader('X-Configuration',JSON.stringify(config));
-    res.sendStatus(200);
+    sendEvent(instanceId, event, function (err, config) {
+      if(err) return res.status(err.statusCode || 500).send(err.message);
+      
+      res.setHeader('X-Configuration',JSON.stringify(config));
+      res.sendStatus(200);
+    });
   };
 
   function deleteInstance (chartName, instanceId, done) {

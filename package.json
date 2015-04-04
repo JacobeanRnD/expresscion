@@ -5,8 +5,7 @@
   "homepage": "https://github.com/JacobeanRnD/SCXMLD",
   "main": "./index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "bower install"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {
     "node": ">= 0.8.x"
@@ -15,10 +14,8 @@
   "bin": {
     "scxmld": "index.js"
   },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "dependencies": {
+    "async": "^0.9.0",
     "cors": "2.1.1",
     "ejs": "^2.3.1",
     "express": "^4.12.2",

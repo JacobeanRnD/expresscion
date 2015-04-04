@@ -29,6 +29,14 @@ module.exports.getInstanceSnapshot = function (id, done) {
   done(null, instance.getSnapshot());
 };
 
+module.exports.sendEvent = function (id, event, done) {
+  var instance = instances[id];
+
+  var conf = instance.gen(event);
+
+  done(null, conf);
+};
+
 module.exports.deleteStatechart = function (name, done) {
   // Simple server doesn't need to delete anything on simulation side
   done(null);
