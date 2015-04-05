@@ -16,7 +16,10 @@ module.exports = function (opts, initialized) {
 
   // I think execution should wait for db to initialize
   pg.connect(opts.connectionString, function (connectError, client, done) {
-    if(connectError) return console.log('Postgres connection error', connectError);
+    if(connectError){ 
+      console.log('Postgres connection error', connectError);
+      return initialized(connectError);
+    }
 
     var schemas = [
       'CREATE TABLE IF NOT EXISTS ' +
