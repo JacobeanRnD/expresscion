@@ -71,10 +71,6 @@ module.exports = function (opts, initialized) {
     
   db.saveStatechart = function (user, name, scxmlString, done) {
     var userId = null,
-      selectQuery = {
-        text: 'SELECT * FROM statecharts WHERE name = $1',
-        values: [name]
-      }, 
       insertQuery = {
         text: 'INSERT INTO statecharts (name, scxml) VALUES($1, $2)',
         values: [name, scxmlString]
@@ -84,14 +80,8 @@ module.exports = function (opts, initialized) {
         values: [name, scxmlString]
       };
 
-
     if(user && user.id) {
       userId = user.id;
-
-      selectQuery = {
-        text: 'SELECT * FROM statecharts WHERE name = $1 AND userid = $2',
-        values: [name, userId]
-      };
 
       insertQuery = {
         text: 'INSERT INTO statecharts (name, scxml, userid) VALUES($1, $2, $3)',
@@ -104,12 +94,11 @@ module.exports = function (opts, initialized) {
       };
     }
 
-    query(selectQuery, function (error, result) {
+    query(updateQuery, function (error, result) {
       if(error) return done(error);
+      if(result.rowCount > 0) return done();
 
-      var finalQuery = result.rowCount === 0 ? insertQuery : updateQuery;
-
-      query(finalQuery, function (error, result) {
+      query(insertQuery, function (error) {
         if(error) return done(error);
 
         done();
