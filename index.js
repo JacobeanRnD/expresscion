@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 
-function init(port, cb){
+function init(options, cb){
+
+  var provider = options.dbProvider || require('./providers/databases/postgres-db');
 
   var express = require('express'),
     path = require('path'),
@@ -11,7 +13,8 @@ function init(port, cb){
     api = require('./providers/common/api');
 
   // TODO: Parameterize this so we can use npm install scxmld-docker plug-in.
-  var database = require('./providers/databases/postgres-db')(function (err) {
+
+  var database = provider(function (err) {
     if(err) return cb(err);
 
     console.log('Db initialized');
@@ -24,7 +27,7 @@ function init(port, cb){
 
   var smaasJSON = yaml.safeLoad(fs.readFileSync(__dirname + '/smaas.yml','utf8'));
 
-  port = port || process.env.PORT || 8002;
+  var port = options.port || process.env.PORT || 8002;
 
   smaasJSON.host = process.env.SMAAS_HOST_URL || ('localhost' + ':' + port);
 
