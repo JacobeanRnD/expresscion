@@ -24,7 +24,6 @@ module.exports = function (opts, initialized) {
     var schemas = [
       'CREATE TABLE IF NOT EXISTS ' +
       ' statecharts(name varchar primary key,' +
-      ' userid varchar default null,' +
       ' scxml varchar,' +
       ' created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW())',
 
@@ -71,6 +70,8 @@ module.exports = function (opts, initialized) {
       });
     });
   }
+
+  db.query = query;
     
   db.saveStatechart = function (user, name, scxmlString, done) {
     var userId = null,
@@ -82,20 +83,6 @@ module.exports = function (opts, initialized) {
         text: 'UPDATE statecharts SET scxml = $2 WHERE name = $1',
         values: [name, scxmlString]
       };
-
-    if(user && user.id) {
-      userId = user.id;
-
-      insertQuery = {
-        text: 'INSERT INTO statecharts (name, scxml, userid) VALUES($1, $2, $3)',
-        values: [name, scxmlString, userId]
-      };
-
-      updateQuery = {
-        text: 'UPDATE statecharts SET scxml = $2 WHERE name = $1 AND userid = $3',
-        values: [name, scxmlString, userId]
-      };
-    }
 
     query(updateQuery, function (error, result) {
       if(error) return done(error);
@@ -139,15 +126,6 @@ module.exports = function (opts, initialized) {
         text: 'SELECT * FROM statecharts',
         values: []
       };
-
-    if(user && user.id) {
-      userId = user.id;
-
-      selectQuery = {
-        text: 'SELECT * FROM statecharts WHERE userid = $1',
-        values: [userId]
-      };
-    }
 
     query(selectQuery, function (error, result) {
       if(error) return done(error);
