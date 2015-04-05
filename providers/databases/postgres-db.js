@@ -12,7 +12,7 @@ module.exports = function (opts, initialized) {
   }
 
   opts = opts || {};
-  opts.connectionString = opts.connectionString || process.env.POSTGRES_URL || 'postgres://postgres:test@localhost:5432/smaas';
+  opts.connectionString = opts.connectionString || process.env.POSTGRES_URL || 'postgres://postgres:test@localhost:5432/scxmld';
 
   // I think execution should wait for db to initialize
   pg.connect(opts.connectionString, function (connectError, client, done) {

@@ -102,19 +102,21 @@ module.exports = function (simulation, db) {
   api.deleteStatechartDefinition = function(req, res){
     var chartName = req.params.StateChartName;
 
-    // Delete the statechart object in simulation
-    simulation.deleteStatechart(chartName, function (err) {
+    // Get list of instances
+    db.getInstances(chartName, function (err, instances) {
+      console.log('err',err);
       if(err) return res.status(500).send(err);
-
-      // Get list of instances
-      db.getInstances(chartName, function (err, instances) {
-        async.eachSeries(instances, function (instanceId, done) {
-          // Delete each instance object in simulation
-          deleteInstance (chartName, instanceId, function () {
-            // Delete each instance from db
-            db.deleteInstance(chartName, instanceId, done);
-          });
-        }, function () {
+      
+      async.eachSeries(instances, function (instanceId, done) {
+        // Delete each instance object in simulation
+        deleteInstance (chartName, instanceId, function () {
+          // Delete each instance from db
+          db.deleteInstance(chartName, instanceId, done);
+        });
+      }, function () {
+        // Delete the statechart object in simulation
+        simulation.deleteStatechart(chartName, function (err) {
+          if(err) return res.status(500).send(err);
           // Delete statechart from db
           db.deleteStatechart(chartName, function (err) {
             if(err) return res.status(err.statusCode || 500).send(err.message);

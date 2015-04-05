@@ -119,8 +119,8 @@ module.exports = function(db){
   api.deleteStatechart = function(chartName, done){
     var image = docker.getImage(chartName);
     image.remove(function(err){
-      if(err) return res.send(500, err.message);
-      res.send(200);
+      if(err) return done(err);
+      done();
     });
   };
 
@@ -133,7 +133,7 @@ module.exports = function(db){
         if(err) return done(err);
         container.remove(function(err){
           if(err) return done(err);
-          db.del(instanceId,function(err){
+          db.del(id,function(err){
             if(err) return done(err);
 
             done();
