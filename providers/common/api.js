@@ -190,10 +190,10 @@ module.exports = function (simulation, db) {
       return res.status(400).send(e.message);
     }
 
-    sendEvent(instanceId, event, function (err, config) {
+    sendEvent(instanceId, event, function (err, nextConfiguration) {
       if(err) return res.status(err.statusCode || 500).send(err.message);
       
-      res.setHeader('X-Configuration',JSON.stringify(config));
+      res.setHeader('X-Configuration',JSON.stringify(nextConfiguration));
       res.sendStatus(200);
     });
   };

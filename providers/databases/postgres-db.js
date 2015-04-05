@@ -228,14 +228,24 @@ module.exports = function (opts, initialized) {
   };
 
   db.set = function (key, value, done) {
-    query({
-      text: 'INSERT INTO metainfo (key, data) VALUES($1, $2)',
-      values: [key, value]
-    }, function (error) {
-      if(error) return done(error);
 
-      done();
-    });
+    var values = [key, value];
+    query({
+      text : 'UPDATE metainfo SET data=$2 where key=$1;',
+      values : values
+    }, function(err, result){
+      if(err) return done(err);
+      if(result.rowCount > 0) return done();
+
+      query({
+        text : 'INSERT INTO metainfo (key, data) VALUES($1, $2);',
+        values : values
+      }, function(err, result){
+        if(err) return done(err);
+
+        done();
+      }); 
+    }); 
   };
 
   db.get = function (key, done) {

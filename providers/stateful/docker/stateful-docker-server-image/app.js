@@ -35,18 +35,18 @@ app.post('/start',function(req,res){
     instance.start(); 
   }
 
-  res.send(instance.getSnapshot());
+  res.json(instance.getConfiguration());
 });
 
 app.get('/',function(req,res){
-  return res.send(instance.getSnapshot());
+  return res.json(instance.getSnapshot());
 });
 
 app.post('/',function(req,res){
   var event = req.body;
   instance.gen(event);
   //TODO: let the statechart control the response
-  return res.json(instance.getSnapshot());
+  return res.json(instance.getConfiguration());
 });
 
 app.get('/_changes',function(req,res){
@@ -86,7 +86,7 @@ app.use(function(req, res, next) {
 if (app.get('env') === 'development') {
     app.use(function(err, req, res, next) {
         res.status(err.status || 500);
-        res.send({
+        res.json({
             message: err.message,
             error: err
         });
@@ -97,7 +97,7 @@ if (app.get('env') === 'development') {
 // no stacktraces leaked to user
 app.use(function(err, req, res, next) {
     res.status(err.status || 500);
-    res.send({
+    res.json({
         message: err.message,
         error: {}
     });

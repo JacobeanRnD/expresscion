@@ -71,15 +71,16 @@ module.exports = function(db){
 
 
   api.startInstance = function (id, done) {
+    if(!id) throw new Error('id not specified');
     db.get(id, function(err, containerInfo){
       if(err) return done(err);
       request({
         url : 'http://' + containerInfo.ip + ':3000/start',
-        method : 'POST'
+        method : 'POST',
+        json : true
       },function(err, response, body){
         if(err) return done(err);
 
-        console.log('here2', body);
         return done(null, body);
       });
     });
@@ -90,7 +91,8 @@ module.exports = function(db){
       if(err) return done(err);
       request({
         url : 'http://' + containerInfo.ip + ':3000/',
-        method : 'GET'
+        method : 'GET',
+        json : true
       },function(err, response, body){
         if(err) return done(err);
 
@@ -105,7 +107,7 @@ module.exports = function(db){
       request({
         url : 'http://' + containerInfo.ip + ':3000/',
         method : 'POST',
-        json : event
+        json : event,
       },function(err, response, body){
         if(err) return done(err);
 
