@@ -122,8 +122,7 @@ module.exports = function (opts, initialized) {
   };
 
   db.getStatechartList = function (user, done) {
-    var userId = null,
-      selectQuery = {
+    var selectQuery = {
         text: 'SELECT * FROM statecharts',
         values: []
       };
@@ -178,7 +177,7 @@ module.exports = function (opts, initialized) {
 
   db.deleteInstance = function (chartName, instanceId, done) {
     query({
-      text: 'DELETE FROM instances WHERE instanceId = $1',
+      text: 'DELETE FROM instances WHERE id = $1',
       values: [instanceId]
     }, function (error) {
       if(error) return done(error);
@@ -214,7 +213,7 @@ module.exports = function (opts, initialized) {
       }, function(err, result){
         if(err) return done(err);
 
-        done();
+        done(null, result.rowCount > 0);
       }); 
     }); 
   };
