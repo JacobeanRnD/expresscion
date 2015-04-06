@@ -3,9 +3,11 @@
 
   var fs = require('fs'),
   yaml = require('js-yaml'),
-  api = require('./providers/common/api');
+  smaasApi = require('./providers/common/api');
 
-function initExpress (cb) {
+function initExpress (opts, cb) {
+  opts = opts || {};
+
   var express = require('express'),
   path = require('path'),
   app = express();
@@ -23,32 +25,33 @@ function initExpress (cb) {
   app.engine('html', require('ejs').renderFile);
   app.use(express.static(path.join(__dirname, './public')));
 
-  var database = require('./providers/databases/postgres-db');
-  var simulationServer = require('./providers/stateful/simple')(database);
-
-  initApi({
-    app: app,
-    simulationServer: simulationServer,
-    database: database
-  }, cb);
+  opts.database = require('./providers/databases/postgres-db');
+  opts.simulationServer = require('./providers/stateful/simple');
+  opts.app = app;
+  console.log(0);
+  initApi(opts, cb);
 }
 
 function initApi(opts, cb){
   opts = opts || {};
-  opts.basePath = opts.basePath || '/api/v1/';
+  opts.basePath = opts.basePath || '/api/v1';
   opts.port = opts.port || process.env.PORT || 8002;
 
-  if(!opts.app || opts.database || opts.simulationServer) {
+  if(!opts.app || !opts.database || !opts.simulationServer) {
     return cb(new Error('Missing app or database or simulationServer'));
   }
 
-  opts.database(function (err) {
+  console.log(1);
+  opts.database(function (err, db) {
     if(err) return cb(err);
 
     console.log('Db initialized');
 
     // Initialize the api
-    api = api(opts.simulationServer, opts.database);
+    var simulation = opts.simulationServer(db);
+
+    console.log(2);
+    var api = smaasApi(simulation, db);
 
     var smaasJSON = yaml.safeLoad(fs.readFileSync(__dirname + '/smaas.yml','utf8'));
     smaasJSON.host = process.env.SMAAS_HOST_URL || ('localhost' + ':' + opts.port);
@@ -58,8 +61,8 @@ function initApi(opts, cb){
       res.status(200).send(smaasJSON);
     });
 
-    opts.app.get(opts.basePath + ':StateChartName/:InstanceId/_viz', api.instanceViz);
-    opts.app.get(opts.basePath + ':StateChartName/_viz', api.statechartViz);
+    opts.app.get(smaasJSON.basePath + '/:StateChartName/:InstanceId/_viz', api.instanceViz);
+    opts.app.get(smaasJSON.basePath + '/:StateChartName/_viz', api.statechartViz);
 
     function methodNotImplementedMiddleware(req, res){
       return res.send(501, { message: 'Not implemented' });
@@ -105,9 +108,9 @@ function initApi(opts, cb){
   });
 }
 
-
 if(require.main === module) {
-  initExpress(function (err, opts) {
+  console.log('asdasdas');
+  initExpress({}, function (err, opts) {
     console.log('Starting server on port:', opts.port);
     if(err) throw err;
 
@@ -116,5 +119,8 @@ if(require.main === module) {
     });
   });
 } else {
-  module.exports.api = api;
+  module.exports = {
+    initApi: initApi,
+    initExpress: initExpress
+  };
 }

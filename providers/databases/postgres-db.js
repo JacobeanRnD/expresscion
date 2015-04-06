@@ -53,7 +53,7 @@ module.exports = function (opts, initialized) {
       
       client.end();
       done();
-      initialized(err);
+      initialized(err, db);
     });
   });
 
