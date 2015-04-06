@@ -76,7 +76,7 @@ module.exports = function (simulation, db) {
   api.createNamedInstance = function(req, res){
     var chartName = req.params.StateChartName;
 
-    db.getInstance(chartName, req.params.InstanceId, function (err, exists) {
+    db.getInstance(chartName, chartName + '/' + req.params.InstanceId, function (err, exists) {
       if(exists) return res.sendStatus(409);
 
       createInstance(chartName, req.params.InstanceId, function (err, instanceId, initialConfiguration) {
