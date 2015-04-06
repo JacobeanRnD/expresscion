@@ -25,10 +25,8 @@ function initExpress (opts, cb) {
   app.engine('html', require('ejs').renderFile);
   app.use(express.static(path.join(__dirname, './public')));
 
-  opts.database = require('./providers/databases/postgres-db');
-  opts.simulationServer = require('./providers/stateful/simple');
   opts.app = app;
-  console.log(0);
+
   initApi(opts, cb);
 }
 
@@ -36,13 +34,15 @@ function initApi(opts, cb){
   opts = opts || {};
   opts.basePath = opts.basePath || '/api/v1';
   opts.port = opts.port || process.env.PORT || 8002;
+  opts.dbProvider = opts.dbProvider || require('./providers/databases/postgres-db');
+  opts.simulationServer = opts.simulationServer || require('./providers/stateful/simple');
 
-  if(!opts.app || !opts.database || !opts.simulationServer) {
-    return cb(new Error('Missing app or database or simulationServer'));
+  if(!opts.app) {
+    return cb(new Error('Missing express app'));
   }
 
   console.log(1);
-  opts.database(function (err, db) {
+  opts.dbProvider(function (err, db) {
     if(err) return cb(err);
 
     console.log('Db initialized');
