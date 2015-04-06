@@ -37,12 +37,11 @@ function initApi(opts, cb){
   opts.dbProvider = opts.dbProvider || require('./providers/databases/postgres-db');
   opts.simulationServer = opts.simulationServer || require('./providers/stateful/simple');
   opts.middlewares = opts.middlewares || [];
-  
+
   if(!opts.app) {
     return cb(new Error('Missing express app'));
   }
 
-  console.log(1);
   opts.dbProvider(function (err, db) {
     if(err) return cb(err);
 
@@ -51,7 +50,6 @@ function initApi(opts, cb){
     // Initialize the api
     var simulation = opts.simulationServer(db);
 
-    console.log(2);
     var api = smaasApi(simulation, db);
 
     var smaasJSON = yaml.safeLoad(fs.readFileSync(__dirname + '/smaas.yml','utf8'));
@@ -110,7 +108,6 @@ function initApi(opts, cb){
 }
 
 if(require.main === module) {
-  console.log('asdasdas');
   initExpress({}, function (err, opts) {
     console.log('Starting server on port:', opts.port);
     if(err) throw err;
