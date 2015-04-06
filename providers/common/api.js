@@ -24,7 +24,6 @@ module.exports = function (simulation, db) {
     }
 
     validate(scxmlString, function(errors){
-
       if(errors) return res.status(400).send({ name : 'error.create', data : errors });
 
       simulation.createStatechart(scName, scxmlString, function (err, chartName) {
@@ -159,6 +158,7 @@ module.exports = function (simulation, db) {
         
       simulation.getInstanceSnapshot(instanceId, function (err, snapshot) {
         if(err) return res.status(err.statusCode || 500).send(err.message);
+        else if(!snapshot) res.sendStatus(404);
 
         res.status(200).send(snapshot);
       });

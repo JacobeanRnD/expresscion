@@ -74,8 +74,7 @@ module.exports = function (opts, initialized) {
   db.query = query;
     
   db.saveStatechart = function (user, name, scxmlString, done) {
-    var userId = null,
-      insertQuery = {
+      var insertQuery = {
         text: 'INSERT INTO statecharts (name, scxml) VALUES($1, $2)',
         values: [name, scxmlString]
       }, 
@@ -104,6 +103,8 @@ module.exports = function (opts, initialized) {
       if(error) return done(error);
 
       var statechart = result.rows[0];
+
+      if(!statechart) return done();
       
       done(null, statechart.scxml);
     });
