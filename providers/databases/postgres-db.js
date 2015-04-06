@@ -151,12 +151,12 @@ module.exports = function (opts, initialized) {
 
   db.getInstance = function (chartName, instanceId, done) {
     query({
-      text: 'SELECT * FROM instances WHERE instanceId = $1',
+      text: 'SELECT * FROM instances WHERE id = $1',
       values: [instanceId]
     }, function (error, result) {
       if(error) return done(error);
 
-      done(result.rowCount > 0);
+      done(null, result.rowCount > 0);
     });
   };
 
