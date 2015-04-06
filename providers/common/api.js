@@ -46,7 +46,11 @@ module.exports = function (simulation, db) {
   };
 
   api.createOrUpdateStatechartDefinition = function(req, res){
-    createStatechartDefinition(req, res, req.params.StateChartName);
+    db.getStatechart(req.params.StateChartName, function (err, scxml) {
+      if(scxml) return res.sendStatus(409);
+
+      createStatechartDefinition(req, res, req.params.StateChartName);
+    });
   };
 
   function createInstance(chartName, instanceId, done){
@@ -72,13 +76,17 @@ module.exports = function (simulation, db) {
   api.createNamedInstance = function(req, res){
     var chartName = req.params.StateChartName;
 
-    createInstance(chartName, req.params.InstanceId, function (err, instanceId, initialConfiguration) {
-      if(err) return res.status(err.statusCode || 500).send(err.message);
+    db.getInstance(chartName, req.params.InstanceId, function (err, exists) {
+      if(exists) return res.sendStatus(409);
 
-      res.setHeader('Location', instanceId);
-      res.setHeader('X-Configuration',JSON.stringify(initialConfiguration));
+      createInstance(chartName, req.params.InstanceId, function (err, instanceId, initialConfiguration) {
+        if(err) return res.status(err.statusCode || 500).send(err.message);
 
-      res.sendStatus(201);
+        res.setHeader('Location', instanceId);
+        res.setHeader('X-Configuration',JSON.stringify(initialConfiguration));
+
+        res.sendStatus(201);
+      });
     });
   };
 
