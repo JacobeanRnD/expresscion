@@ -36,7 +36,8 @@ function initApi(opts, cb){
   opts.port = opts.port || process.env.PORT || 8002;
   opts.dbProvider = opts.dbProvider || require('./providers/databases/postgres-db');
   opts.simulationServer = opts.simulationServer || require('./providers/stateful/simple');
-
+  opts.middlewares = opts.middlewares || [];
+  
   if(!opts.app) {
     return cb(new Error('Missing express app'));
   }
@@ -78,19 +79,19 @@ function initApi(opts, cb){
         var handler = api[method.operationId] || methodNotImplementedMiddleware;
         switch(methodName) {
           case 'get': {
-            opts.app.get(actualPath, handler);
+            opts.app.get(actualPath, opts.middlewares, handler);
             break;
           }
           case 'post': {
-            opts.app.post(actualPath, handler);
+            opts.app.post(actualPath, opts.middlewares, handler);
             break;
           }
           case 'put': {
-            opts.app.put(actualPath, handler);
+            opts.app.put(actualPath, opts.middlewares, handler);
             break;
           }
           case 'delete': {
-            opts.app.delete(actualPath, handler);
+            opts.app.delete(actualPath, opts.middlewares, handler);
             break;
           }
           default:{
