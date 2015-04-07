@@ -22,7 +22,7 @@ module.exports = function(db){
       if(err) return done(err);
 
       var archive = archiver.create('tar');
-      var chartName = scName || model.name || uuid.v1();
+      var chartName = scName || model.meta.name || uuid.v1();
 
       var compiledModuleStr = 'module.exports = ' + model.toString() + ';';
 

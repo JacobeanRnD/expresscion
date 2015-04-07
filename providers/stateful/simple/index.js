@@ -11,7 +11,7 @@ module.exports = function () {
 
   server.createStatechart = function (scName, scxmlString, done) {
     scxml.documentStringToModel(null, scxmlString, function (err, model) {
-      var chartName = scName || model().name || uuid.v1();
+      var chartName = scName || model.meta.name || uuid.v1();
 
       models[chartName] = model;
 

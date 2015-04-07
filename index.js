@@ -35,7 +35,7 @@ function initApi(opts, cb){
   opts.basePath = opts.basePath || '/api/v1';
   opts.port = opts.port || process.env.PORT || 8002;
   opts.dbProvider = opts.dbProvider || require('./providers/databases/postgres-db');
-  opts.simulationProvider = opts.simulationProvider || require('./providers/stateful/docker');
+  opts.simulationProvider = opts.simulationProvider || require('./providers/stateful/simple');
   opts.middlewares = opts.middlewares || [];
 
   if(!opts.app) {
