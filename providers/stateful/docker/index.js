@@ -5,13 +5,8 @@ var uuid = require('uuid');
 var docker = require('./docker');
 var archiver = require('archiver');
 var http = require('http');
-
 var request = require('request');
-
-var tar = require('tar');
-var fstream = require('fstream');
 var createSandbox = require('./ScionSandbox');
-var simpleSmaasProvider = require('../simple');
 
 var compiledScxmlModuleName = 'compiled-scxml.js';
 var dockerfileStr = 
@@ -140,7 +135,7 @@ module.exports = function(db){
           });
         });
       });
-    })
+    });
   };
 
   api.registerListener = function(id, res, done){
@@ -166,4 +161,4 @@ module.exports = function(db){
   };
 
   return api;
-}
+};
