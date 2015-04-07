@@ -3,61 +3,56 @@
 var pg = require('pg'),
   async = require('async');
 
-module.exports = function (opts, initialized) {
+module.exports = function (opts) {
   var db = {};
-
-  if(typeof(opts) === 'function') {
-    initialized = opts;
-    opts = {};
-  }
-
   opts = opts || {};
   opts.connectionString = opts.connectionString || process.env.POSTGRES_URL || 'postgres://postgres:test@localhost:5432/scxmld';
 
-  // I think execution should wait for db to initialize
-  pg.connect(opts.connectionString, function (connectError, client, done) {
-    if(connectError){ 
-      console.log('Postgres connection error', connectError);
-      return initialized(connectError);
-    }
-
-    var schemas = [
-      'CREATE TABLE IF NOT EXISTS ' +
-      ' statecharts(name varchar primary key,' +
-      ' scxml varchar,' +
-      ' created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW())',
-
-      'CREATE TABLE IF NOT EXISTS' +
-      ' instances(id varchar primary key,' +
-      ' statechartName name REFERENCES statecharts(name) ON DELETE CASCADE,' +
-      ' created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW())',
-      
-      'CREATE TABLE IF NOT EXISTS' + 
-      ' events(created TIMESTAMP WITH TIME ZONE primary key DEFAULT NOW(),' +
-      ' instanceId varchar REFERENCES instances(id) ON DELETE CASCADE,' +
-      ' event JSON,' +
-      ' snapshot JSON)',
-      
-      'CREATE TABLE IF NOT EXISTS' +
-      ' metainfo(key varchar primary key,' +
-      ' data JSON,' +
-      ' created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW())'
-    ];
-
-    async.eachSeries(schemas, function (schema, next) {
-      client.query(schema, next);
-    }, function (err) {
-      if(err) {
-        console.log('Error initializing postgres.', err);
+  db.init = function (initialized) {
+    pg.connect(opts.connectionString, function (connectError, client, done) {
+      if(connectError){ 
+        console.log('Postgres connection error', connectError);
+        return initialized(connectError);
       }
-      
-      client.end();
-      done();
-      initialized(err, db);
-    });
-  });
 
-  function query (config, queryDone) {
+      var schemas = [
+        'CREATE TABLE IF NOT EXISTS ' +
+        ' statecharts(name varchar primary key,' +
+        ' scxml varchar,' +
+        ' created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW())',
+
+        'CREATE TABLE IF NOT EXISTS' +
+        ' instances(id varchar primary key,' +
+        ' statechartName name REFERENCES statecharts(name) ON DELETE CASCADE,' +
+        ' created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW())',
+        
+        'CREATE TABLE IF NOT EXISTS' + 
+        ' events(created TIMESTAMP WITH TIME ZONE primary key DEFAULT NOW(),' +
+        ' instanceId varchar REFERENCES instances(id) ON DELETE CASCADE,' +
+        ' event JSON,' +
+        ' snapshot JSON)',
+        
+        'CREATE TABLE IF NOT EXISTS' +
+        ' metainfo(key varchar primary key,' +
+        ' data JSON,' +
+        ' created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW())'
+      ];
+
+      async.eachSeries(schemas, function (schema, next) {
+        client.query(schema, next);
+      }, function (err) {
+        if(err) {
+          console.log('Error initializing postgres.', err);
+        }
+        
+        client.end();
+        done();
+        initialized(err);
+      });
+    });
+  };
+
+  db.query = function (config, queryDone) {
     pg.connect(opts.connectionString, function (connectError, client, done) {
       if(connectError) return queryDone(connectError);
 
@@ -69,9 +64,7 @@ module.exports = function (opts, initialized) {
         if (queryDone) queryDone(queryError, result);
       });
     });
-  }
-
-  db.query = query;
+  };
     
   db.saveStatechart = function (user, name, scxmlString, done) {
       var insertQuery = {
@@ -83,11 +76,11 @@ module.exports = function (opts, initialized) {
         values: [name, scxmlString]
       };
 
-    query(updateQuery, function (error, result) {
+    db.query(updateQuery, function (error, result) {
       if(error) return done(error);
       if(result.rowCount > 0) return done();
 
-      query(insertQuery, function (error) {
+      db.query(insertQuery, function (error) {
         if(error) return done(error);
 
         done();
@@ -96,7 +89,7 @@ module.exports = function (opts, initialized) {
   };
 
   db.getStatechart = function (name, done) {
-    query({
+    db.query({
       text: 'SELECT * FROM statecharts WHERE name = $1',
       values: [name]
     }, function (error, result) {
@@ -111,7 +104,7 @@ module.exports = function (opts, initialized) {
   };
 
   db.deleteStatechart = function (chartName, done) {
-    query({
+    db.query({
       text: 'DELETE FROM statecharts WHERE name = $1',
       values: [chartName]
     }, function (error) {
@@ -127,7 +120,7 @@ module.exports = function (opts, initialized) {
         values: []
       };
 
-    query(selectQuery, function (error, result) {
+    db.query(selectQuery, function (error, result) {
       if(error) return done(error);
       
       var statecharts = result.rows.map(function (statechart) {
@@ -139,7 +132,7 @@ module.exports = function (opts, initialized) {
   };
 
   db.saveInstance = function (chartName, instanceId, done) {
-    query({
+    db.query({
       text: 'INSERT INTO instances (id, statechartName) VALUES($1, $2)',
       values: [instanceId, chartName]
     }, function (error) {
@@ -150,7 +143,7 @@ module.exports = function (opts, initialized) {
   };
 
   db.getInstance = function (chartName, instanceId, done) {
-    query({
+    db.query({
       text: 'SELECT * FROM instances WHERE id = $1',
       values: [instanceId]
     }, function (error, result) {
@@ -161,7 +154,7 @@ module.exports = function (opts, initialized) {
   };
 
   db.getInstances = function (chartName, done) {
-    query({
+    db.query({
       text: 'SELECT * FROM instances WHERE statechartName = $1',
       values: [chartName]
     }, function (error, result) {
@@ -176,7 +169,7 @@ module.exports = function (opts, initialized) {
   };
 
   db.deleteInstance = function (chartName, instanceId, done) {
-    query({
+    db.query({
       text: 'DELETE FROM instances WHERE id = $1',
       values: [instanceId]
     }, function (error) {
@@ -187,7 +180,7 @@ module.exports = function (opts, initialized) {
   };
 
   db.saveEvent = function (instanceId, details, done) {
-    query({
+    db.query({
       text: 'INSERT INTO events (instanceId, event, snapshot, created) VALUES($1, $2, $3, $4)',
       values: [instanceId, JSON.stringify(details.event), JSON.stringify(details.resultSnapshot), details.timestamp]
     }, function (error) {
@@ -198,16 +191,15 @@ module.exports = function (opts, initialized) {
   };
 
   db.set = function (key, value, done) {
-
     var values = [key, value];
-    query({
+    db.query({
       text : 'UPDATE metainfo SET data=$2 where key=$1;',
       values : values
     }, function(err, result){
       if(err) return done(err);
       if(result.rowCount > 0) return done();
 
-      query({
+      db.query({
         text : 'INSERT INTO metainfo (key, data) VALUES($1, $2);',
         values : values
       }, function(err, result){
@@ -219,7 +211,7 @@ module.exports = function (opts, initialized) {
   };
 
   db.get = function (key, done) {
-    query({
+    db.query({
       text: 'SELECT * FROM metainfo WHERE key = $1',
       values: [key]
     }, function (error, result) {
@@ -235,7 +227,7 @@ module.exports = function (opts, initialized) {
   };
 
   db.del = function (key, done) {
-    query({
+    db.query({
       text: 'DELETE FROM metainfo WHERE key = $1',
       values: [key]
     }, function (error) {
