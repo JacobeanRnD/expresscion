@@ -1,0 +1,1 @@
+cd SCXMLD-tests && npm install && npm test
