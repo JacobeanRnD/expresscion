@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-  var fs = require('fs'),
-  yaml = require('js-yaml'),
-  smaasApi = require('./providers/common/api');
+var smaasApi = require('./app/api');
 
 function initExpress (opts, cb) {
   opts = opts || {};
@@ -34,8 +32,8 @@ function initApi(opts, cb){
   opts = opts || {};
   opts.basePath = opts.basePath || '/api/v1';
   opts.port = opts.port || process.env.PORT || 8002;
-  opts.dbProvider = opts.dbProvider || require('./providers/databases/postgres-db');
-  opts.simulationProvider = opts.simulationProvider || require('./providers/stateful/simple');
+  opts.dbProvider = opts.dbProvider || require('SCXMLD-simple-database-provider');
+  opts.simulationProvider = opts.simulationProvider || require('SCXMLD-simple-simulation-provider');
   opts.middlewares = opts.middlewares || [];
 
   if(!opts.app) {
@@ -43,6 +41,7 @@ function initApi(opts, cb){
   }
 
   var db = opts.dbProvider();
+  console.log('db ',db );
 
   db.init(function (err) {
     if(err) return cb(err);
@@ -54,7 +53,8 @@ function initApi(opts, cb){
 
     var api = smaasApi(simulation, db);
 
-    var smaasJSON = yaml.safeLoad(fs.readFileSync(__dirname + '/smaas.yml','utf8'));
+    var smaasJSON = require('smaas-swagger-spec');
+
     smaasJSON.host = process.env.SMAAS_HOST_URL || ('localhost' + ':' + opts.port);
     smaasJSON.basePath = opts.basePath;
 

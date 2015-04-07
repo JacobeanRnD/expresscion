@@ -1,0 +1,3 @@
+[submodule "SCXMLD-tests"]
+	path = SCXMLD-tests
+	url = git@github.com:JacobeanRnD/SCXMLD-tests.git

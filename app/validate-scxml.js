@@ -4,7 +4,7 @@ var libxmljs = require('libxmljs');
 var path = require('path');
 var fs = require('fs');
 
-var scxmlSchemaPath = path.resolve(__dirname + '/../../scxml.xsd');
+var scxmlSchemaPath = path.resolve(__dirname + '/../scxml.xsd');
 var scxmlSchemaContent = fs.readFileSync(scxmlSchemaPath, {
     encoding: 'utf-8'
   });
@@ -14,7 +14,7 @@ var scxmlSchema = libxmljs.parseXml(scxmlSchemaContent);
 scxmlSchema.find('//xsd:import', {
   xsd: 'http://www.w3.org/2001/XMLSchema'
 })[0].attr({
-  schemaLocation: __dirname + '/../../xml.xsd'
+  schemaLocation: __dirname + '/../xml.xsd'
 });
 
 module.exports.validate = function(scxmlDoc){
