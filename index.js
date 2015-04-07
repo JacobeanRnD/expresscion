@@ -42,7 +42,9 @@ function initApi(opts, cb){
     return cb(new Error('Missing express app'));
   }
 
-  opts.dbProvider().init(function (err, db) {
+  var db = opts.dbProvider();
+
+  db.init(function (err) {
     if(err) return cb(err);
 
     console.log('Db initialized');
