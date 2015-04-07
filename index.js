@@ -41,7 +41,6 @@ function initApi(opts, cb){
   }
 
   var db = opts.dbProvider();
-  console.log('db ',db );
 
   db.init(function (err) {
     if(err) return cb(err);
