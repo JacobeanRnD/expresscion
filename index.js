@@ -35,7 +35,7 @@ function initApi(opts, cb){
   opts.basePath = opts.basePath || '/api/v1';
   opts.port = opts.port || process.env.PORT || 8002;
   opts.dbProvider = opts.dbProvider || require('./providers/databases/postgres-db');
-  opts.simulationServer = opts.simulationServer || require('./providers/stateful/simple');
+  opts.simulationProvider = opts.simulationProvider || require('./providers/stateful/docker');
   opts.middlewares = opts.middlewares || [];
 
   if(!opts.app) {
@@ -50,7 +50,7 @@ function initApi(opts, cb){
     console.log('Db initialized');
 
     // Initialize the api
-    var simulation = opts.simulationServer(db);
+    var simulation = opts.simulationProvider(db);
 
     var api = smaasApi(simulation, db);
 
