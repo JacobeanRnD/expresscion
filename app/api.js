@@ -46,11 +46,7 @@ module.exports = function (simulation, db) {
   };
 
   api.createOrUpdateStatechartDefinition = function(req, res){
-    db.getStatechart(req.params.StateChartName, function (err, scxml) {
-      if(scxml) return res.sendStatus(409);
-
-      createStatechartDefinition(req, res, req.params.StateChartName);
-    });
+    createStatechartDefinition(req, res, req.params.StateChartName);
   };
 
   function createInstance(chartName, instanceId, done){
