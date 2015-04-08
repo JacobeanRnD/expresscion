@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
-var smaasApi = require('./app/api');
+var smaasApi = require('./app/api'),
+  _ = require('underscore');
 
 function initExpress (opts, cb) {
   opts = opts || {};
@@ -65,9 +66,10 @@ function initApi(opts, cb){
     });
 
     opts.app.get('/:username/smaas.json', function (req, res) {
-      var cached = smaasJSON;
-      cached.basePath += '/' + req.params.username;
-      res.status(200).send(cached);
+      var userSmaasJSON = _.clone(smaasJSON);
+      userSmaasJSON.basePath += '/' + req.params.username;
+
+      res.status(200).send(userSmaasJSON);
     });
 
     opts.app.get(smaasJSON.basePath + '/:StateChartName/:InstanceId/_viz', api.instanceViz);
