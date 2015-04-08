@@ -67,7 +67,7 @@ function initApi(opts, cb){
     opts.app.get('/:username/smaas.json', function (req, res) {
       var cached = smaasJSON;
       cached.basePath += '/' + req.params.username;
-      res.status(200).send(smaasJSON);
+      res.status(200).send(cached);
     });
 
     opts.app.get(smaasJSON.basePath + '/:StateChartName/:InstanceId/_viz', api.instanceViz);
