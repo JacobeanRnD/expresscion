@@ -6,6 +6,7 @@
   "main": "./index.js",
   "scripts": {
     "test": "bash run-tests.sh",
+    "postinstall": "bower install",
     "start": "node index.js"
   },
   "engines": {
@@ -22,6 +23,7 @@
     "ejs": "^2.3.1",
     "express": "^4.12.3",
     "libxmljs": "^0.13.0",
+    "morgan": "^1.5.2",
     "smaas-swagger-spec": "git+ssh://git@github.com:JacobeanRnD/SMaaS-swagger-spec.git"
   }
 }

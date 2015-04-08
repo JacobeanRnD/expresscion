@@ -8,8 +8,11 @@ function initExpress (opts, cb) {
 
   var express = require('express'),
   path = require('path'),
+  logger = require('morgan'),
   app = express();
 
+  app.use(logger('dev'));
+  
   // buffer the body
   app.use(function(req, res, next) {
     req.body = '';
