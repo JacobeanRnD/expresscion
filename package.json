@@ -1,9 +1,15 @@
 {
   "name": "scxmld",
   "description": "Standalone in-memory SCXML server daemon",
-  "version": "1.0.0",
+  "version": "0.0.1a",
   "homepage": "https://github.com/JacobeanRnD/SCXMLD",
   "main": "./index.js",
+  "license": "Apache-2",
+  "author": {
+    "name" : "Jacob Beard",
+    "email" : "jake@jacobeanrnd.com",
+    "url" : "http://github.com/jbeard4"
+  },
   "scripts": {
     "preinstall": "npm install -g bower",
     "test": "bash run-tests.sh",
