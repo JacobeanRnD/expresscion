@@ -67,7 +67,8 @@ function initApi(opts, cb){
 
     opts.app.get('/:username/smaas.json', function (req, res) {
       var userSmaasJSON = _.clone(smaasJSON);
-      userSmaasJSON.basePath += '/' + req.params.username;
+
+      userSmaasJSON.basePath = userSmaasJSON.basePath.replace(':username', req.params.username);
 
       res.status(200).send(userSmaasJSON);
     });
