@@ -17,14 +17,14 @@
     "scxmld": "index.js"
   },
   "dependencies": {
-    "SCXMLD-simple-database-provider": "git+https://github.com:JacobeanRnD/SCXMLD-simple-database-provider.git",
-    "SCXMLD-simple-simulation-provider": "git+https://github.com:JacobeanRnD/SCXMLD-simple-simulation-provider.git",
+    "SCXMLD-simple-database-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-database-provider.git",
+    "SCXMLD-simple-simulation-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-simulation-provider.git",
     "async": "^0.9.0",
     "ejs": "^2.3.1",
     "express": "^4.12.3",
     "libxmljs": "^0.13.0",
     "morgan": "^1.5.2",
-    "smaas-swagger-spec": "git+https://github.com:JacobeanRnD/SMaaS-swagger-spec.git",
+    "smaas-swagger-spec": "git://github.com/JacobeanRnD/SMaaS-swagger-spec.git",
     "underscore": "^1.8.3"
   }
 }
