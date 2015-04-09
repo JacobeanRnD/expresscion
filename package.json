@@ -1,6 +1,6 @@
 {
   "name": "scxmld",
-  "description": "Standalone in-memory SCXML server daemon",
+  "description": "SCXML orchestration server. Implements SMaaS.",
   "version": "0.0.1a",
   "homepage": "https://github.com/JacobeanRnD/SCXMLD",
   "main": "./index.js",
