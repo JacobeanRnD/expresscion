@@ -261,11 +261,9 @@ module.exports = function (simulation, db) {
   api.getEventLog = function (req, res) {
     var instanceId = getInstanceId(req);
 
-    var events = events[instanceId];
-
-    if(!events) return res.sendStatus(404);
-
-    res.status(200).send(events);
+    db.getEvents(instanceId, function (err, events) {
+      res.send(events);
+    });
   };
 
   function broadcastDefinitionChange(chartName){
