@@ -14,7 +14,7 @@ in-memory database provider, and a simple SCION simulation sandbox.
 SCXMLD can be installed and run locally, or deployed to the cloud.
 
 This is an alpha release. Subsequent releases will document the node module
-API.
+API. 
 
 ### Installation
 
