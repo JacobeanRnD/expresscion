@@ -1,7 +1,17 @@
 ## SCXMLD
 
+![Tests](https://magnum.travis-ci.com/JacobeanRnD/SCXMLD.svg?token=tW6nVvCmQPPuKMxQTSmg&branch=master)
+
 SCXMLD is an open SCXML orchestration server. SCXMLD provides a server
 implementation of the State Machines as a Service (SMaaS) REST API.
+
+### Installation
+
+```
+npm install -g scxmld scxml-cli
+```
+
+See [SCXML-CLI](https://github.com/JacobeanRnD/SCXML-CLI) for information on command-line syntax. 
 
 ### Architecture
 
@@ -16,10 +26,3 @@ SCXMLD can be installed and run locally, or deployed to the cloud.
 This is an alpha release. Subsequent releases will document the node module
 API. 
 
-### Installation
-
-```
-git clone git@github.com:JacobeanRnD/SCXMLD.git
-cd SCXMLD
-npm install -g .
-```
