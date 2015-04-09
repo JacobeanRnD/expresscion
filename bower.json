@@ -19,6 +19,6 @@
     "tests"
   ],
   "dependencies": {
-    "desm-force-layout": "git+https://18c2f5d073b47be8b1f92424eb2e4030ea467ea4:x-oauth-basic@github.com/JacobeanRnD/deus-ex-state-machine-visualization.git"
+    "desm-force-layout": "git://github.com/JacobeanRnD/deus-ex-state-machine-visualization.git"
   }
 }
