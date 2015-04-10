@@ -142,6 +142,10 @@ module.exports = function (simulation, db) {
     db.getInstances(chartName, function (err, instances) {
       if (!util.IsOk(err, res)) return;
 
+      instances = instances.map(function (id) {
+        return { id: id.split('/')[1] };
+      });
+
       res.send({ name: 'success.get.instances', data: { instances: instances }});
     });
   };
