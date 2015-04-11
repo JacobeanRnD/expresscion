@@ -38,7 +38,7 @@ $(function() {
           return;
         }
         
-        drawSimulation(content, function () {
+        drawSimulation(content.data.scxml, function () {
           if(isFirst) {
             layout.fit();
             isFirst = false;  
