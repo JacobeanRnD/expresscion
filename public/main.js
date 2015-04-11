@@ -80,7 +80,7 @@ $(function() {
               return;
             }
 
-            configuration.forEach(highlight.bind(this, 'onEntry'));
+            configuration.data.instance.snapshot.forEach(highlight.bind(this, 'onEntry'));
           });
         }, function (err) {
           alert(err.message);
