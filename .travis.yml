@@ -8,8 +8,3 @@ before_install:
 - npm i -g jasmine-node
 - npm i -g npm@2.7.3
 - jshint . 
-- export POSTGRES_URL='postgres://postgres@localhost:5432/scxmld'
-before_script:
-- psql -c 'create database scxmld;' -U postgres
-addons:
-  postgresql: "9.3"
