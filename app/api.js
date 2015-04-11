@@ -169,13 +169,18 @@ module.exports = function (simulation, db) {
   };
 
   api.getInstance = function(req, res){
+    var chartName = req.params.StateChartName;
     var instanceId = util.getInstanceId(req);
-        
-    simulation.getInstanceSnapshot(instanceId, function (err, snapshot) {
-      if (!util.IsOk(err, res)) return;
-      if(!snapshot) return res.status(404).send({ name: 'error.getting.instance', data: { message: 'Instance not found' }});
 
-      res.send({ name: 'success.get.instance', data: { instance: { snapshot: snapshot }}});
+    db.getInstance(chartName, instanceId, function (err, exists) {
+      if(!exists) return res.sendStatus(404);
+        
+      simulation.getInstanceSnapshot(instanceId, function (err, snapshot) {
+        if (!util.IsOk(err, res)) return;
+        if(!snapshot) return res.status(404).send({ name: 'error.getting.instance', data: { message: 'Instance not found' }});
+
+        res.send({ name: 'success.get.instance', data: { instance: { snapshot: snapshot }}});
+      });
     });
   };
 
@@ -211,7 +216,11 @@ module.exports = function (simulation, db) {
     event.response = res;
 
     sendEvent(instanceId, event, function (err, nextConfiguration) {
+      // Check if statechart has already responded
+      if(res.headersSent) return;
+
       if (!util.IsOk(err, res)) return;
+
 
       res.setHeader('X-Configuration',JSON.stringify(nextConfiguration));
       res.send({ name: 'success.event.sent', data: { snapshot: nextConfiguration }});
