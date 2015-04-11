@@ -196,6 +196,9 @@ module.exports = function (simulation, db) {
       return res.status(400).send(e.message);
     }
 
+    event.request = req;
+    event.response = res;
+
     sendEvent(instanceId, event, function (err, nextConfiguration) {
       if(err) return res.status(err.statusCode || 500).send(err.message);
       
