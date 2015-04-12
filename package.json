@@ -6,9 +6,9 @@
   "main": "./index.js",
   "license": "Apache-2.0",
   "author": {
-    "name" : "Jacob Beard",
-    "email" : "jake@jacobeanrnd.com",
-    "url" : "http://github.com/jbeard4"
+    "name": "Jacob Beard",
+    "email": "jake@jacobeanrnd.com",
+    "url": "http://github.com/jbeard4"
   },
   "scripts": {
     "preinstall": "npm install -g bower",
@@ -27,6 +27,7 @@
     "SCXMLD-simple-database-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-database-provider.git",
     "SCXMLD-simple-simulation-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-simulation-provider.git",
     "async": "^0.9.0",
+    "cors": "^2.5.3",
     "ejs": "^2.3.1",
     "express": "^4.12.3",
     "libxmljs": "^0.12.0",

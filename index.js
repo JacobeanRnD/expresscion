@@ -2,7 +2,8 @@
 'use strict';
 
 var smaasApi = require('./app/api'),
-  _ = require('underscore');
+  _ = require('underscore'),
+  cors = require('cors');
 
 function initExpress (opts, cb) {
   opts = opts || {};
@@ -22,6 +23,17 @@ function initExpress (opts, cb) {
     });
     return req.on('end', next);
   });
+  
+  if (!process.env.WEBSITE_URL) {
+    throw ('Missing "WEBSITE_URL" variable.');
+  }
+
+  var websiteUrl = process.env.WEBSITE_URL;
+
+  app.use(cors({
+    origin: websiteUrl,
+    exposedHeaders: ['WWW-Authenticate', 'Location', 'X-Configuration']
+  }));
 
   app.set('views', path.join(__dirname, './views'));
   app.engine('html', require('ejs').renderFile);
