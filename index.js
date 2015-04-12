@@ -120,8 +120,13 @@ function initApi(opts, cb){
   });
 }
 
+
 if(require.main === module) {
-  initExpress({}, function (err, opts) {
+  var opts = {};
+  if(process.env.SIMULATION_PROVIDER){
+    opts.simulationProvider = require(process.env.SIMULATION_PROVIDER);
+  }
+  initExpress(opts, function (err, opts) {
     console.log('Starting server on port:', opts.port);
     if(err) throw err;
 
