@@ -8,3 +8,4 @@ before_install:
 - npm i -g jasmine-node
 - npm i -g npm@2.7.3
 - jshint . 
+- export WEBSITE_URL='http://scxmldev.io'
