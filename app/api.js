@@ -216,10 +216,12 @@ module.exports = function (simulation, db) {
   };
 
   function deleteInstance (chartName, instanceId, done) {
-    simulation.deleteInstance(instanceId, function (err) {
-      if(err) return done(err);
+    simulation.unregisterListener(instanceId, function () {
+      simulation.deleteInstance(instanceId, function (err) {
+        if(err) return done(err);
 
-      db.deleteInstance(chartName, instanceId, done);
+        db.deleteInstance(chartName, instanceId, done);
+      });
     });
   }
 
