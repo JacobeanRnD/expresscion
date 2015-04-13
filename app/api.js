@@ -25,7 +25,7 @@ module.exports = function (simulation, db) {
     }
 
     validate(scxmlString, function(errors) {
-      if(errors) return res.send(400, { name: 'error.xml.schema', data: errors });
+      if(errors) return res.status(400).send({ name: 'error.xml.schema', data: errors });
 
       simulation.createStatechart(scName, scxmlString, function (err, chartName) {
         if (!util.IsOk(err, res)) return;
