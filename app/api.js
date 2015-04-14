@@ -189,7 +189,7 @@ module.exports = function (simulation, db) {
         db.saveEvent(instanceId, {
           timestamp: new Date(),
           event: event,
-          resultSnapshot: snapshot
+          snapshot: snapshot
         }, function (err) {
           done(err, conf);
         });
