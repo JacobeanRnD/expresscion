@@ -7,6 +7,6 @@ before_install:
 - npm i -g jshint
 - npm i -g jasmine
 - npm i -g istanbul
-- npm i -g npm@2.7.3
+- npm i -g npm@2.8.1
 - jshint . 
 - export WEBSITE_URL='http://scxmldev.io'
