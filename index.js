@@ -7,6 +7,7 @@ var smaasApi = require('./app/api'),
 
 function initExpress (opts, cb) {
   opts = opts || {};
+  opts.port = opts.port || process.env.PORT || 8002;
 
   var express = require('express'),
   path = require('path'),
@@ -24,11 +25,13 @@ function initExpress (opts, cb) {
     return req.on('end', next);
   });
   
-  if (!process.env.WEBSITE_URL) {
-    throw ('Missing "WEBSITE_URL" variable.');
+  var websiteUrl = 'http://localhost:' + opts.port;
+  
+  if (process.env.WEBSITE_URL) {
+    websiteUrl = process.env.WEBSITE_URL;
+  } else {
+    console.log('Missing "WEBSITE_URL" variable.');
   }
-
-  var websiteUrl = process.env.WEBSITE_URL;
 
   app.use(cors({
     origin: websiteUrl,
@@ -46,8 +49,8 @@ function initExpress (opts, cb) {
 
 function initApi(opts, cb){
   opts = opts || {};
-  opts.basePath = opts.basePath || '/api/v1';
   opts.port = opts.port || process.env.PORT || 8002;
+  opts.basePath = opts.basePath || '/api/v1';
   opts.dbProvider = opts.dbProvider || require('SCXMLD-simple-database-provider');
   opts.simulationProvider = opts.simulationProvider || require('SCXMLD-simple-simulation-provider');
   opts.middlewares = opts.middlewares || [];
