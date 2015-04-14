@@ -11,18 +11,7 @@ module.exports = function (simulation, db) {
   var api = {};
 
   function createStatechartDefinition(req, res, scName) {
-    var scxmlString;
-
-    if(req.headers['content-type'] === 'application/json') {
-      try {
-        var body = JSON.parse(req.body);
-        scxmlString = body.scxml;
-      } catch(e) {
-        return res.status(400).send({ name : 'error.malformed.body', data : e.message });
-      }
-    } else {
-      scxmlString = req.body;
-    }
+    var scxmlString = req.body;
 
     validate(scxmlString, function(errors) {
       if(errors) return res.status(400).send({ name: 'error.xml.schema', data: errors });
