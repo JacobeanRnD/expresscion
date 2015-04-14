@@ -12,14 +12,13 @@
   },
   "scripts": {
     "preinstall": "npm install -g bower",
-    "test": "bash run-tests.sh",
+    "test": "cd SCXMLD-tests && npm install && cd .. && istanbul cover jasmine",
     "postinstall": "bower install",
     "start": "node index.js"
   },
   "engines": {
     "node": ">= 0.8.x"
   },
-  "preferGlobal": true,
   "bin": {
     "scxmld": "index.js"
   },
