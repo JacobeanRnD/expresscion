@@ -5,6 +5,10 @@
   "homepage": "https://github.com/JacobeanRnD/SCXMLD",
   "main": "./index.js",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JacobeanRnD/SCXMLD.git"
+  },
   "author": {
     "name": "Jacob Beard",
     "email": "jake@jacobeanrnd.com",
