@@ -15,14 +15,8 @@
     "url": "http://github.com/jbeard4"
   },
   "scripts": {
-<<<<<<< HEAD
-    "test": "bash run-tests.sh",
     "postinstall": "node node_modules/bower/bin/bower --allow-root install",
-=======
-    "preinstall": "npm install -g bower",
     "test": "cd SCXMLD-tests && npm install && cd .. && istanbul cover jasmine",
-    "postinstall": "bower install",
->>>>>>> 78764e79972a82dccac294543ef301d4581fb05b
     "start": "node index.js"
   },
   "engines": {
