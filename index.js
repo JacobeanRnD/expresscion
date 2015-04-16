@@ -2,10 +2,12 @@
 'use strict';
 
 var smaasApi = require('./app/api'),
-  _ = require('underscore');
+  _ = require('underscore'),
+  cors = require('cors');
 
 function initExpress (opts, cb) {
   opts = opts || {};
+  opts.port = opts.port || process.env.PORT || 8002;
 
   var express = require('express'),
   path = require('path'),
@@ -22,6 +24,19 @@ function initExpress (opts, cb) {
     });
     return req.on('end', next);
   });
+  
+  var websiteUrl = 'http://localhost:' + opts.port;
+  
+  if (process.env.WEBSITE_URL) {
+    websiteUrl = process.env.WEBSITE_URL;
+  } else {
+    console.log('Missing "WEBSITE_URL" variable.');
+  }
+
+  app.use(cors({
+    origin: websiteUrl,
+    exposedHeaders: ['WWW-Authenticate', 'Location', 'X-Configuration']
+  }));
 
   app.set('views', path.join(__dirname, './views'));
   app.engine('html', require('ejs').renderFile);
@@ -34,8 +49,8 @@ function initExpress (opts, cb) {
 
 function initApi(opts, cb){
   opts = opts || {};
-  opts.basePath = opts.basePath || '/api/v1';
   opts.port = opts.port || process.env.PORT || 8002;
+  opts.basePath = opts.basePath || '/api/v1';
   opts.dbProvider = opts.dbProvider || require('SCXMLD-simple-database-provider');
   opts.simulationProvider = opts.simulationProvider || require('SCXMLD-simple-simulation-provider');
   opts.middlewares = opts.middlewares || [];

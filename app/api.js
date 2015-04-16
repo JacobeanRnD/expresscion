@@ -11,21 +11,10 @@ module.exports = function (simulation, db) {
   var api = {};
 
   function createStatechartDefinition(req, res, scName) {
-    var scxmlString;
-
-    if(req.headers['content-type'] === 'application/json') {
-      try {
-        var body = JSON.parse(req.body);
-        scxmlString = body.scxml;
-      } catch(e) {
-        return res.status(400).send({ name : 'error.malformed.body', data : e.message });
-      }
-    } else {
-      scxmlString = req.body;
-    }
+    var scxmlString = req.body;
 
     validate(scxmlString, function(errors) {
-      if(errors) return res.send(400, { name: 'error.xml.schema', data: errors });
+      if(errors) return res.status(400).send({ name: 'error.xml.schema', data: errors });
 
       simulation.createStatechart(scName, scxmlString, function (err, chartName) {
         if (!util.IsOk(err, res)) return;
@@ -189,7 +178,7 @@ module.exports = function (simulation, db) {
         db.saveEvent(instanceId, {
           timestamp: new Date(),
           event: event,
-          resultSnapshot: snapshot
+          snapshot: snapshot
         }, function (err) {
           done(err, conf);
         });
@@ -216,10 +205,12 @@ module.exports = function (simulation, db) {
   };
 
   function deleteInstance (chartName, instanceId, done) {
-    simulation.deleteInstance(instanceId, function (err) {
-      if(err) return done(err);
+    simulation.unregisterListener(instanceId, function () {
+      simulation.deleteInstance(instanceId, function (err) {
+        if(err) return done(err);
 
-      db.deleteInstance(chartName, instanceId, done);
+        db.deleteInstance(chartName, instanceId, done);
+      });
     });
   }
 

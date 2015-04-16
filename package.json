@@ -5,20 +5,29 @@
   "homepage": "https://github.com/JacobeanRnD/SCXMLD",
   "main": "./index.js",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JacobeanRnD/SCXMLD.git"
+  },
   "author": {
     "name": "Jacob Beard",
     "email": "jake@jacobeanrnd.com",
     "url": "http://github.com/jbeard4"
   },
   "scripts": {
+<<<<<<< HEAD
     "test": "bash run-tests.sh",
     "postinstall": "node node_modules/bower/bin/bower --allow-root install",
+=======
+    "preinstall": "npm install -g bower",
+    "test": "cd SCXMLD-tests && npm install && cd .. && istanbul cover jasmine",
+    "postinstall": "bower install",
+>>>>>>> 78764e79972a82dccac294543ef301d4581fb05b
     "start": "node index.js"
   },
   "engines": {
     "node": ">= 0.8.x"
   },
-  "preferGlobal": true,
   "bin": {
     "scxmld": "index.js"
   },
@@ -26,6 +35,7 @@
     "SCXMLD-simple-database-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-database-provider.git",
     "SCXMLD-simple-simulation-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-simulation-provider.git",
     "async": "^0.9.0",
+    "cors": "^2.5.3",
     "ejs": "^2.3.1",
     "express": "^4.12.3",
     "libxmljs": "0.11.0",
