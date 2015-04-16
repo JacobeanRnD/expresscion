@@ -1,7 +1,7 @@
 {
   "name": "scxmld",
   "description": "SCXML orchestration server. Implements SMaaS.",
-  "version": "0.0.1a",
+  "version": "0.0.2a",
   "homepage": "https://github.com/JacobeanRnD/SCXMLD",
   "main": "./index.js",
   "license": "Apache-2.0",
