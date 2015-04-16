@@ -6,14 +6,13 @@
   "main": "./index.js",
   "license": "Apache-2.0",
   "author": {
-    "name" : "Jacob Beard",
-    "email" : "jake@jacobeanrnd.com",
-    "url" : "http://github.com/jbeard4"
+    "name": "Jacob Beard",
+    "email": "jake@jacobeanrnd.com",
+    "url": "http://github.com/jbeard4"
   },
   "scripts": {
-    "preinstall": "npm install -g bower",
     "test": "bash run-tests.sh",
-    "postinstall": "bower install",
+    "postinstall": "node node_modules/bower/bin/bower --allow-root install",
     "start": "node index.js"
   },
   "engines": {
@@ -32,6 +31,7 @@
     "libxmljs": "^0.12.0",
     "morgan": "^1.5.2",
     "smaas-swagger-spec": "git://github.com/JacobeanRnD/SMaaS-swagger-spec.git",
-    "underscore": "^1.8.3"
+    "underscore": "^1.8.3",
+    "bower": "~1.4.1"
   }
 }
