@@ -29,13 +29,14 @@
     "SCXMLD-simple-database-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-database-provider.git",
     "SCXMLD-simple-simulation-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-simulation-provider.git",
     "async": "^0.9.0",
+    "bower": "~1.4.1",
     "cors": "^2.5.3",
     "ejs": "^2.3.1",
     "express": "^4.12.3",
     "libxmljs": "0.11.0",
     "morgan": "^1.5.2",
     "smaas-swagger-spec": "git://github.com/JacobeanRnD/SMaaS-swagger-spec.git",
-    "underscore": "^1.8.3",
-    "bower": "~1.4.1"
+    "tar": "^2.1.0",
+    "underscore": "^1.8.3"
   }
 }

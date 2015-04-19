@@ -1,6 +1,7 @@
 'use strict';
 
 var async = require('async');
+var tar = require('tar');
 var validate = require('./validate-scxml').validateCreateScxmlRequest;
 var sse = require('./sse');
 var util = require('./util');
@@ -10,7 +11,30 @@ var statechartDefinitionSubscriptions = {};
 module.exports = function (simulation, db) {
   var api = {};
 
+  function tarballStuff (req, res, scName) {
+    console.log('tarball');
+
+    req.pipe(tar.Parse()).on('entry', function (entry) {
+      var fileName = entry.path,
+        fileContents = '';
+
+      entry.on('data', function (c) {
+        fileContents += c.toString();
+      });
+      entry.on('end', function () {
+        console.log(fileName, fileContents);
+      });
+    });
+  }
+
   function createStatechartDefinition(req, res, scName) {
+    console.log(req.headers);
+    if(req.is('application/x-tar')) {
+      return tarballStuff(req, res, scName);
+    }
+
+
+
     var scxmlString = req.body;
 
     validate(scxmlString, function(errors) {

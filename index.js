@@ -18,6 +18,9 @@ function initExpress (opts, cb) {
   
   // buffer the body
   app.use(function(req, res, next) {
+    // Don't buffer for tarballs
+    if(req.is('application/x-tar')) return next();
+
     req.body = '';
     req.on('data', function(data) {
       return req.body += data;
