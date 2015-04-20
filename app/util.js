@@ -4,7 +4,7 @@ var util = {};
 
 util.IsOk = function (error, response) {
   if (error) {
-    response.send(500, {
+    response.status(500).send({
       name: 'error.on.action',
       data: {
         message: error.message || error
@@ -24,7 +24,7 @@ util.dbIsOkAndNotEmpty = function (error, response, dbResult) {
 
   if (dbResult.rowCount === 0) {
     //If db has no records
-    response.send(404, {
+    response.status(404).send({
       name: 'error.finding.record',
       data: {
         message: 'Could not find the record'

@@ -28,7 +28,6 @@ module.exports = function (simulation, db) {
   }
 
   function createStatechartDefinition(req, res, scName) {
-    console.log(req.headers);
     if(req.is('application/x-tar')) {
       return tarballStuff(req, res, scName);
     }
