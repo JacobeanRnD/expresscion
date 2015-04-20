@@ -16,7 +16,7 @@
   },
   "scripts": {
     "postinstall": "node node_modules/bower/bin/bower --allow-root install",
-    "test": "cd SCXMLD-tests && npm install && cd .. && istanbul cover jasmine",
+    "test": "cd SCXMLD-tests && npm install && cd .. && node node_modules/istanbul/lib/cli.js cover node_modules/jasmine/bin/jasmine.js",
     "start": "node index.js"
   },
   "engines": {
@@ -38,5 +38,9 @@
     "smaas-swagger-spec": "git://github.com/JacobeanRnD/SMaaS-swagger-spec.git",
     "tar": "^2.1.0",
     "underscore": "^1.8.3"
+  },
+  "devDependencies": {
+    "istanbul": "^0.3.13",
+    "jasmine": "^2.2.1"
   }
 }
