@@ -11,29 +11,48 @@ var statechartDefinitionSubscriptions = {};
 module.exports = function (simulation, db) {
   var api = {};
 
-  function tarballStuff (req, res, scName) {
-    console.log('tarball');
+  function createStatechartDefinitionWithTarball (req, res, scName) {
+    // What is happening here:
+    // 1 - request body has tar stream which goes into tar parser
+    // 2 - "on entry" section is storing each file on memory for inspection, validation etc.
+    // 3 - files goes into the simulation server
 
-    req.pipe(tar.Parse()).on('entry', function (entry) {
-      var fileName = entry.path,
-        fileContents = '';
+    var files = {};
 
-      entry.on('data', function (c) {
-        fileContents += c.toString();
+    req.pipe(tar.Parse()).
+      on('entry', function (entry) {
+        var fileContents = '';
+
+        entry.on('data', function (c) {
+          fileContents += c.toString();
+        });
+
+        entry.on('end', function () {
+          files[entry.path] = { content: fileContents };
+        });
+      }).
+      on('end', function () {
+        console.log('all ended', Object.keys(files));
+
+        // TODO: Validate all .scxml files with async.eachSeries
+        // TODO: Abort stream parsing if there is validation error
+        // TODO: Pick index.js or first .scxml file as main
+        // TODO: Create each scxml file as a statechart so invoke can work
+        // TODO: Save statecharts to DB
+        // TODO: Broadcast each scxml change
+
+        simulation.createStatechartWithTar(scName, files, function (err, chartName) {
+          if (!util.IsOk(err, res)) return;
+
+          res.setHeader('Location', chartName);
+          res.status(201).send({ name: 'success.create.definition', data: { chartName: chartName }});
+
+          broadcastDefinitionChange(chartName);
+        });
       });
-      entry.on('end', function () {
-        console.log(fileName, fileContents);
-      });
-    });
   }
 
-  function createStatechartDefinition(req, res, scName) {
-    if(req.is('application/x-tar')) {
-      return tarballStuff(req, res, scName);
-    }
-
-
-
+  function createStatechartDefinitionWithJson (req, res, scName) {
     var scxmlString = req.body;
 
     validate(scxmlString, function(errors) {
@@ -52,6 +71,14 @@ module.exports = function (simulation, db) {
         });
       });
     });
+  }
+
+  function createStatechartDefinition(req, res, scName) {
+    if(req.is('application/x-tar')) {
+      return createStatechartDefinitionWithTarball(req, res, scName);
+    } else  {
+      return createStatechartDefinitionWithJson(req, res, scName);
+    }
   }
 
   api.createStatechartDefinition = function(req, res){
