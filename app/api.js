@@ -2,6 +2,7 @@
 
 var async = require('async');
 var tar = require('tar');
+var uuid = require('uuid');
 var validate = require('./validate-scxml').validateCreateScxmlRequest;
 var sse = require('./sse');
 var util = require('./util');
@@ -44,10 +45,12 @@ module.exports = function (simulation, db) {
 
         if(!mainFile) return res.status(400).send({ name: 'error.missing.file', data: { message: 'index.scxml is missing.' } });
 
-        validate(mainFile.content, function(errors) {
+        validate(mainFile.content, function(errors, scxmlName) {
           if(errors) res.status(400).send({ name: 'error.xml.schema', data: errors });
 
-          simulation.createStatechartWithTar(scName, files, function (err, chartName) {
+          var chartName = scName || scxmlName || uuid.v1();
+
+          simulation.createStatechartWithTar(chartName, files, function (err, chartName) {
             if (!util.IsOk(err, res)) return;
 
             db.saveStatechart(req.user, chartName, mainFile.content , function (err) {
@@ -66,10 +69,12 @@ module.exports = function (simulation, db) {
   function createStatechartDefinitionWithJson (req, res, scName) {
     var scxmlString = req.body;
 
-    validate(scxmlString, function(errors) {
+    validate(scxmlString, function(errors, scxmlName) {
       if(errors) return res.status(400).send({ name: 'error.xml.schema', data: errors });
 
-      simulation.createStatechart(scName, scxmlString, function (err, chartName) {
+      var chartName = scName || scxmlName || uuid.v1();
+
+      simulation.createStatechart(chartName, scxmlString, function (err, chartName) {
         if (!util.IsOk(err, res)) return;
 
         db.saveStatechart(req.user, chartName, scxmlString, function (err) {

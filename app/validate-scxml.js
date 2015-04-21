@@ -39,5 +39,7 @@ module.exports.validateCreateScxmlRequest = function(scxmlString, cb){
     return cb(errors);
   }
 
-  cb(null, scxmlDoc);
+  var scxmlName = scxmlDoc.find('/*/@name')[0].value();
+
+  cb(null, scxmlName);
 };
