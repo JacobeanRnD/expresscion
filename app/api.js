@@ -74,7 +74,7 @@ module.exports = function (simulation, db) {
 
       var chartName = scName || scxmlName || uuid.v1();
 
-      simulation.createStatechart(chartName, scxmlString, function (err, chartName) {
+      simulation.createStatechart(chartName, scxmlString, function (err) {
         if (!util.IsOk(err, res)) return;
 
         db.saveStatechart(req.user, chartName, scxmlString, function (err) {
