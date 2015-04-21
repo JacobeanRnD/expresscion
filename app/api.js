@@ -40,14 +40,25 @@ module.exports = function (simulation, db) {
         // TODO: Create each scxml file as a statechart so invoke can work
         // TODO: Save statecharts to DB
         // TODO: Broadcast each scxml change
+        var mainFile = files['index.scxml'];
 
-        simulation.createStatechartWithTar(scName, files, function (err, chartName) {
-          if (!util.IsOk(err, res)) return;
+        if(!mainFile) return res.status(400).send({ name: 'error.missing.file', data: { message: 'index.scxml is missing.' } });
 
-          res.setHeader('Location', chartName);
-          res.status(201).send({ name: 'success.create.definition', data: { chartName: chartName }});
+        validate(mainFile.content, function(errors) {
+          if(errors) res.status(400).send({ name: 'error.xml.schema', data: errors });
 
-          broadcastDefinitionChange(chartName);
+          simulation.createStatechartWithTar(scName, files, function (err, chartName) {
+            if (!util.IsOk(err, res)) return;
+
+            db.saveStatechart(req.user, chartName, mainFile.content , function (err) {
+              if (!util.IsOk(err, res)) return;
+
+              res.setHeader('Location', chartName);
+              res.status(201).send({ name: 'success.create.definition', data: { chartName: chartName }});
+
+              broadcastDefinitionChange(chartName);
+            });
+          });
         });
       });
   }
