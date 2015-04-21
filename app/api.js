@@ -50,7 +50,7 @@ module.exports = function (simulation, db) {
 
           var chartName = scName || scxmlName || uuid.v1();
 
-          simulation.createStatechartWithTar(chartName, files, function (err, chartName) {
+          simulation.createStatechartWithTar(chartName, files, function (err) {
             if (!util.IsOk(err, res)) return;
 
             db.saveStatechart(req.user, chartName, mainFile.content , function (err) {
