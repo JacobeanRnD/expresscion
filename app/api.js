@@ -164,7 +164,7 @@ module.exports = function (simulation, db) {
     db.getInstances(chartName, function (err, instances) {
       if (!util.IsOk(err, res)) return;
       
-      async.eachSeries(instances, function (instanceId, done) {
+      async.eachSeries(instances || [], function (instanceId, done) {
         // Delete each instance object in simulation
         deleteInstance (chartName, instanceId, function () {
           // Delete each instance from db
