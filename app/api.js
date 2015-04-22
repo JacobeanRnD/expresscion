@@ -1,7 +1,7 @@
 'use strict';
 
 var async = require('async');
-var tar = require('tar');
+var tar = require('tar-stream');
 var uuid = require('uuid');
 var validate = require('./validate-scxml').validateCreateScxmlRequest;
 var sse = require('./sse');
@@ -17,53 +17,69 @@ module.exports = function (simulation, db) {
     // 1 - request body has tar stream which goes into tar parser
     // 2 - "on entry" section is storing each file on memory for inspection, validation etc.
     // 3 - files goes into the simulation server
+    var mainFileStr = '', scxmlName;
 
-    var files = {};
+    var extract = tar.extract(),
+      pack = tar.pack();
 
-    req.pipe(tar.Parse()).
-      on('entry', function (entry) {
-        var fileContents = '';
-
-        entry.on('data', function (c) {
-          fileContents += c.toString();
+    extract.on('entry', function(header, stream, callback) {
+      if(header.name === 'index.scxml')  {
+        //Read index.scxml file
+        stream.on('data', function (c) {
+          mainFileStr += c.toString();
         });
 
-        entry.on('end', function () {
-          files[entry.path] = { content: fileContents };
-        });
-      }).
-      on('end', function () {
-        console.log('all ended', Object.keys(files));
+        stream.on('end', function () {
+          validate(mainFileStr, function(errors, name) {
+            if(errors) {
+              console.log('errors on scxml schema');
+              // TODO: Cancel parsing of tar stream
 
-        // TODO: Validate all .scxml files with async.eachSeries
-        // TODO: Abort stream parsing if there is validation error
-        // TODO: Pick index.js or first .scxml file as main
-        // TODO: Create each scxml file as a statechart so invoke can work
-        // TODO: Save statecharts to DB
-        // TODO: Broadcast each scxml change
-        var mainFile = files['index.scxml'];
+              return res.status(400).send({ name: 'error.xml.schema', data: errors });
+            }
 
-        if(!mainFile) return res.status(400).send({ name: 'error.missing.file', data: { message: 'index.scxml is missing.' } });
-
-        validate(mainFile.content, function(errors, scxmlName) {
-          if(errors) res.status(400).send({ name: 'error.xml.schema', data: errors });
-
-          var chartName = scName || scxmlName || uuid.v1();
-
-          simulation.createStatechartWithTar(chartName, files, function (err) {
-            if (!util.IsOk(err, res)) return;
-
-            db.saveStatechart(req.user, chartName, mainFile.content , function (err) {
-              if (!util.IsOk(err, res)) return;
-
-              res.setHeader('Location', chartName);
-              res.status(201).send({ name: 'success.create.definition', data: { chartName: chartName }});
-
-              broadcastDefinitionChange(chartName);
-            });
+            scxmlName = name;
           });
         });
+      }
+
+      //Repack every existing file
+      stream.pipe(pack.entry(header, callback));
+    });
+
+    extract.on('finish', function() {
+      // all entries done - lets finalize it
+      processStatechart();
+    });
+
+    //Start flowing the stream
+    req.pipe(extract);
+
+    function processStatechart () {
+      // TODO: Validate all .scxml files with async.eachSeries
+      // TODO: Abort stream parsing if there is validation error
+      // TODO: Pick index.js or first .scxml file as main
+      // TODO: Create each scxml file as a statechart so invoke can work
+      // TODO: Save statecharts to DB
+      // TODO: Broadcast each scxml change
+
+      if(!mainFileStr) return res.status(400).send({ name: 'error.missing.file', data: { message: 'index.scxml is missing.' } });
+
+      var chartName = scName || scxmlName || uuid.v1();
+
+      simulation.createStatechartWithTar(chartName, pack, function (err) {
+        if (!util.IsOk(err, res)) return;
+
+        db.saveStatechart(req.user, chartName, mainFileStr, function (err) {
+          if (!util.IsOk(err, res)) return;
+
+          res.setHeader('Location', chartName);
+          res.status(201).send({ name: 'success.create.definition', data: { chartName: chartName }});
+
+          broadcastDefinitionChange(chartName);
+        });
       });
+    }
   }
 
   function createStatechartDefinitionWithJson (req, res, scName) {
