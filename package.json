@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "SCXMLD-simple-database-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-database-provider.git",
-    "SCXMLD-simple-simulation-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-simulation-provider.git",
+    "SCXMLD-simple-simulation-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-simulation-provider.git#62b28d901dc282dcf4d38dfa2e159efd766347bb",
     "async": "^0.9.0",
     "bower": "~1.4.1",
     "cors": "^2.5.3",
