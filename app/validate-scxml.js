@@ -39,5 +39,7 @@ module.exports.validateCreateScxmlRequest = function(scxmlString, cb){
     return cb(errors);
   }
 
-  cb(null, scxmlDoc);
+  var nameAttr = scxmlDoc.get('/scxml:scxml/@name',{ scxml: 'http://www.w3.org/2005/07/scxml' });
+
+  cb(null, nameAttr ? nameAttr.value() : null);
 };

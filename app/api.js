@@ -1,7 +1,8 @@
 'use strict';
 
 var async = require('async');
-var tar = require('tar');
+var tar = require('tar-stream');
+var uuid = require('uuid');
 var validate = require('./validate-scxml').validateCreateScxmlRequest;
 var sse = require('./sse');
 var util = require('./util');
@@ -11,36 +12,85 @@ var statechartDefinitionSubscriptions = {};
 module.exports = function (simulation, db) {
   var api = {};
 
-  function tarballStuff (req, res, scName) {
-    console.log('tarball');
+  function createStatechartDefinitionWithTarball (req, res, scName) {
+    // What is happening here:
+    // 1 - request body has tar stream which goes into tar parser
+    // 2 - "on entry" section is storing each file on memory for inspection, validation etc.
+    // 3 - files goes into the simulation server
+    var mainFileStr = '', scxmlName;
 
-    req.pipe(tar.Parse()).on('entry', function (entry) {
-      var fileName = entry.path,
-        fileContents = '';
+    var extract = tar.extract(),
+      pack = tar.pack();
 
-      entry.on('data', function (c) {
-        fileContents += c.toString();
-      });
-      entry.on('end', function () {
-        console.log(fileName, fileContents);
-      });
+    extract.on('entry', function(header, stream, callback) {
+      if(header.name === 'index.scxml')  {
+        //Read index.scxml file
+        stream.on('data', function (c) {
+          mainFileStr += c.toString();
+        });
+
+        stream.on('end', function () {
+          validate(mainFileStr, function(errors, name) {
+            if(errors) {
+              console.log('errors on scxml schema');
+              // TODO: Cancel parsing of tar stream
+
+              return res.status(400).send({ name: 'error.xml.schema', data: errors });
+            }
+
+            scxmlName = name;
+          });
+        });
+      }
+
+      //Repack every existing file
+      stream.pipe(pack.entry(header, callback));
     });
+
+    extract.on('finish', function() {
+      // all entries done - lets finalize it
+      processStatechart();
+    });
+
+    //Start flowing the stream
+    req.pipe(extract);
+
+    function processStatechart () {
+      // TODO: Validate all .scxml files with async.eachSeries
+      // TODO: Abort stream parsing if there is validation error
+      // TODO: Pick index.js or first .scxml file as main
+      // TODO: Create each scxml file as a statechart so invoke can work
+      // TODO: Save statecharts to DB
+      // TODO: Broadcast each scxml change
+
+      if(!mainFileStr) return res.status(400).send({ name: 'error.missing.file', data: { message: 'index.scxml is missing.' } });
+
+      var chartName = scName || scxmlName || uuid.v1();
+
+      simulation.createStatechartWithTar(chartName, pack, function (err) {
+        if (!util.IsOk(err, res)) return;
+
+        db.saveStatechart(req.user, chartName, mainFileStr, function (err) {
+          if (!util.IsOk(err, res)) return;
+
+          res.setHeader('Location', chartName);
+          res.status(201).send({ name: 'success.create.definition', data: { chartName: chartName }});
+
+          broadcastDefinitionChange(chartName);
+        });
+      });
+    }
   }
 
-  function createStatechartDefinition(req, res, scName) {
-    console.log(req.headers);
-    if(req.is('application/x-tar')) {
-      return tarballStuff(req, res, scName);
-    }
-
-
-
+  function createStatechartDefinitionWithJson (req, res, scName) {
     var scxmlString = req.body;
 
-    validate(scxmlString, function(errors) {
+    validate(scxmlString, function(errors, scxmlName) {
       if(errors) return res.status(400).send({ name: 'error.xml.schema', data: errors });
 
-      simulation.createStatechart(scName, scxmlString, function (err, chartName) {
+      var chartName = scName || scxmlName || uuid.v1();
+
+      simulation.createStatechart(chartName, scxmlString, function (err) {
         if (!util.IsOk(err, res)) return;
 
         db.saveStatechart(req.user, chartName, scxmlString, function (err) {
@@ -53,6 +103,14 @@ module.exports = function (simulation, db) {
         });
       });
     });
+  }
+
+  function createStatechartDefinition(req, res, scName) {
+    if(req.is('application/x-tar')) {
+      return createStatechartDefinitionWithTarball(req, res, scName);
+    } else  {
+      return createStatechartDefinitionWithJson(req, res, scName);
+    }
   }
 
   api.createStatechartDefinition = function(req, res){
@@ -127,7 +185,7 @@ module.exports = function (simulation, db) {
     db.getInstances(chartName, function (err, instances) {
       if (!util.IsOk(err, res)) return;
       
-      async.eachSeries(instances, function (instanceId, done) {
+      async.eachSeries(instances || [], function (instanceId, done) {
         // Delete each instance object in simulation
         deleteInstance (chartName, instanceId, function () {
           // Delete each instance from db
