@@ -129,8 +129,9 @@ module.exports = function (simulation, db) {
         // TODO: maybe save here?
 
         simulation.startInstance(instanceId, function (err, initialConfiguration) {
-          db.saveInstance(chartName, instanceId, function () {
-            done(err, instanceId, initialConfiguration);
+          db.saveInstance(chartName, instanceId, initialConfiguration, function () {
+            console.log('initialConfiguration', initialConfiguration[0]);
+            done(err, instanceId, initialConfiguration[0]);
           });
         });
       });
@@ -240,9 +241,12 @@ module.exports = function (simulation, db) {
   };
 
   api.getInstance = function(req, res){
+    var chartName = req.params.StateChartName;
     var instanceId = util.getInstanceId(req);
-        
-    simulation.getInstanceSnapshot(instanceId, function (err, snapshot) {
+
+    db.getInstance(chartName, instanceId, function (err, snapshot) {
+      if(!snapshot) return res.sendStatus(404);
+
       if (!util.IsOk(err, res)) return;
       if(!snapshot) return res.status(404).send({ name: 'error.getting.instance', data: { message: 'Instance not found' }});
 
@@ -250,25 +254,30 @@ module.exports = function (simulation, db) {
     });
   };
 
-  function sendEvent (instanceId, event, done) {
+  function sendEvent (chartName, instanceId, event, done) {
     simulation.sendEvent(instanceId, event, function (err, conf) {
       if(err) return done(err);
 
-      simulation.getInstanceSnapshot(instanceId, function (err, snapshot) {
+      db.saveInstance(chartName, instanceId, conf, function () {
         if(err) return done(err);
+
+        simulation.getInstanceSnapshot(instanceId, function (err, snapshot) {
+          if(err) return done(err);
         
-        db.saveEvent(instanceId, {
-          timestamp: new Date(),
-          event: event,
-          snapshot: snapshot
-        }, function (err) {
-          done(err, conf);
+          db.saveEvent(instanceId, {
+            timestamp: new Date(),
+            event: event,
+            snapshot: snapshot
+          }, function (err) {
+            done(err, conf[0]);
+          });
         });
       });
     });
   }
 
   api.sendEvent = function(req, res){
+    var chartName = req.params.StateChartName;
     var instanceId = util.getInstanceId(req),
       event;
 
@@ -278,7 +287,7 @@ module.exports = function (simulation, db) {
       return res.status(400).send({ name: 'error.parsing.json', data: { message: 'Malformed event body.' }});
     }
 
-    sendEvent(instanceId, event, function (err, nextConfiguration) {
+    sendEvent(chartName, instanceId, event, function (err, nextConfiguration) {
       if (!util.IsOk(err, res)) return;
 
       res.setHeader('X-Configuration',JSON.stringify(nextConfiguration));
@@ -287,7 +296,7 @@ module.exports = function (simulation, db) {
   };
 
   function deleteInstance (chartName, instanceId, done) {
-    simulation.unregisterListener(instanceId, function () {
+    simulation.unregisterAllListeners(instanceId, function () {
       simulation.deleteInstance(instanceId, function (err) {
         if(err) return done(err);
 
@@ -312,7 +321,7 @@ module.exports = function (simulation, db) {
 
     simulation.registerListener(instanceId, res, function () {
       sse.initStream(req, res, function(){
-        simulation.unregisterListener(instanceId);
+        simulation.unregisterListener(instanceId, res);
       });
     });
   };

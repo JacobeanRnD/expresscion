@@ -62,6 +62,15 @@ function initApi(opts, cb){
     return cb(new Error('Missing express app'));
   }
 
+  var totalRequestCount = 0;
+  opts.app.use(function (req, res, next) {
+    //We are providing an id to each request and response
+    //So we can unregister "_changes" listeners on stateless servers
+    req.uniqueId = res.uniqueId = totalRequestCount++;
+
+    next();
+  });
+
   var db = opts.dbProvider();
 
   db.init(function (err) {
