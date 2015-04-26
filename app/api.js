@@ -260,17 +260,13 @@ module.exports = function (simulation, db) {
 
       db.saveInstance(chartName, instanceId, conf, function () {
         if(err) return done(err);
-
-        simulation.getInstanceSnapshot(instanceId, function (err, snapshot) {
-          if(err) return done(err);
         
-          db.saveEvent(instanceId, {
-            timestamp: new Date(),
-            event: event,
-            snapshot: snapshot
-          }, function (err) {
-            done(err, conf[0]);
-          });
+        db.saveEvent(instanceId, {
+          timestamp: new Date(),
+          event: event,
+          snapshot: conf
+        }, function (err) {
+          done(err, conf[0]);
         });
       });
     });

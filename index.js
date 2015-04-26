@@ -58,6 +58,8 @@ function initApi(opts, cb){
   opts.simulationProvider = opts.simulationProvider || require('SCXMLD-simple-simulation-provider');
   opts.middlewares = opts.middlewares || [];
 
+  process.env.SEND_URL = (process.env.SCXMLD_URL || ('http://localhost:' + opts.port)) + opts.basePath + '/';
+
   if(!opts.app) {
     return cb(new Error('Missing express app'));
   }
