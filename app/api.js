@@ -260,7 +260,7 @@ module.exports = function (simulation, db) {
 
       db.saveInstance(chartName, instanceId, conf, function () {
         if(err) return done(err);
-        
+
         db.saveEvent(instanceId, {
           timestamp: new Date(),
           event: event,
@@ -272,6 +272,7 @@ module.exports = function (simulation, db) {
     });
   }
 
+  var eventQueue = {};
   api.sendEvent = function(req, res){
     var chartName = req.params.StateChartName;
     var instanceId = util.getInstanceId(req),
@@ -283,12 +284,40 @@ module.exports = function (simulation, db) {
       return res.status(400).send({ name: 'error.parsing.json', data: { message: 'Malformed event body.' }});
     }
 
-    sendEvent(chartName, instanceId, event, function (err, nextConfiguration) {
-      if (!util.IsOk(err, res)) return;
+    var queuedEvents = eventQueue[instanceId] = eventQueue[instanceId] || [];
+    queuedEvents.push(event);
+    
+    checkEventQueue();
 
-      res.setHeader('X-Configuration',JSON.stringify(nextConfiguration));
-      res.send({ name: 'success.event.sent', data: { snapshot: nextConfiguration }});
-    });
+    function checkEventQueue () {
+      //1st event is event itself, rest are queued
+      if(queuedEvents.length > 1) {
+        setTimeout(checkEventQueue, 5);//Wait 5ms and check again
+      } else {
+        processEventQueue(); 
+      }
+    }
+
+    function processEventQueue () {
+      console.log('checking snap');
+      db.getInstance(chartName, instanceId, function (err, snapshot) {
+        if(!snapshot) {
+          console.log('snap not exists');
+          return res.sendStatus(404);
+        }
+
+        console.log('snap exists', snapshot);
+
+        sendEvent(chartName, instanceId, event, function (err, nextConfiguration) {
+          if (!util.IsOk(err, res)) return;
+
+          queuedEvents.splice(0, 1);
+
+          res.setHeader('X-Configuration',JSON.stringify(nextConfiguration));
+          res.send({ name: 'success.event.sent', data: { snapshot: nextConfiguration }});
+        });
+      });
+    }
   };
 
   function deleteInstance (chartName, instanceId, done) {
