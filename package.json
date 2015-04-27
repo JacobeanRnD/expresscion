@@ -35,7 +35,7 @@
     "express": "^4.12.3",
     "libxmljs": "0.11.0",
     "morgan": "^1.5.2",
-    "smaas-swagger-spec": "git://github.com/JacobeanRnD/SMaaS-swagger-spec.git#646d1df1c6a04be08edf8b923651777e46176187",
+    "smaas-swagger-spec": "git://github.com/JacobeanRnD/SMaaS-swagger-spec.git#a9a789eee298569cc772ee9d8ba17cf606529a30",
     "tar-stream": "^1.1.4",
     "underscore": "^1.8.3",
     "uuid": "^2.0.1"
