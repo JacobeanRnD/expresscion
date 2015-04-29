@@ -126,13 +126,8 @@ module.exports = function (simulation, db) {
       if(!scxml) return done({ error: { statusCode: 404 } });
 
       simulation.createInstance(chartName, instanceId, function (err, instanceId) {
-        // TODO: maybe save here?
-
-        simulation.startInstance(instanceId, function (err, initialConfiguration) {
-          db.saveInstance(chartName, instanceId, initialConfiguration, function () {
-            console.log('initialConfiguration', initialConfiguration[0]);
-            done(err, instanceId, initialConfiguration[0]);
-          });
+        db.saveInstance(chartName, instanceId, null, function () {
+          done(err, instanceId);
         });
       });
     });
@@ -148,12 +143,11 @@ module.exports = function (simulation, db) {
     db.getInstance(chartName, chartName + '/' + req.params.InstanceId, function (err, exists) {
       if(exists) return res.status(409).send({ name: 'error.creating.instance', data: { message: 'InstanceId is already associated with an instance' }});
 
-      createInstance(chartName, req.params.InstanceId, function (err, instanceId, initialConfiguration) {
+      createInstance(chartName, req.params.InstanceId, function (err, instanceId) {
         if (!util.IsOk(err, res)) return;
         if(err && err.statusCode === 404) return res.status(404).send({ name: 'error.getting.statechart', data: { message: 'Statechart definition not found' }});
 
         res.setHeader('Location', instanceId);
-        res.setHeader('X-Configuration',JSON.stringify(initialConfiguration));
 
         res.status(201).send({ name: 'success.create.instance', data: { id: util.getShortInstanceId(instanceId) }});
       });
@@ -299,14 +293,8 @@ module.exports = function (simulation, db) {
     }
 
     function processEventQueue () {
-      console.log('checking snap');
-      db.getInstance(chartName, instanceId, function (err, snapshot) {
-        if(!snapshot) {
-          console.log('snap not exists');
-          return res.sendStatus(404);
-        }
-
-        console.log('snap exists', snapshot);
+      db.getInstance(chartName, instanceId, function (err) {
+        if(err) return res.sendStatus(err.statusCode || 500);
 
         sendEvent(chartName, instanceId, event, function (err, nextConfiguration) {
           if (!util.IsOk(err, res)) return;
