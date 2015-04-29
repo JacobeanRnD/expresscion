@@ -294,7 +294,10 @@ module.exports = function (simulation, db) {
 
     function processEventQueue () {
       db.getInstance(chartName, instanceId, function (err) {
-        if(err) return res.sendStatus(err.statusCode || 500);
+        if(err) {
+          queuedEvents.splice(0, 1);
+          return res.sendStatus(err.statusCode || 500);
+        }
 
         sendEvent(chartName, instanceId, event, function (err, nextConfiguration) {
           if (!util.IsOk(err, res)) return;
