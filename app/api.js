@@ -267,7 +267,7 @@ module.exports = function (simulation, db) {
   }
 
   var eventQueue = {};
-  api.sendEvent = function(req, res){
+  api.sendEvent = function(req, res) {
     var chartName = req.params.StateChartName;
     var instanceId = util.getInstanceId(req),
       event;
@@ -278,34 +278,32 @@ module.exports = function (simulation, db) {
       return res.status(400).send({ name: 'error.parsing.json', data: { message: 'Malformed event body.' }});
     }
 
-    var queuedEvents = eventQueue[instanceId] = eventQueue[instanceId] || [];
-    queuedEvents.push(event);
-    
-    checkEventQueue();
+    var queue = eventQueue[instanceId] = eventQueue[instanceId] || [];
+    queue.push([event, res]);
 
-    function checkEventQueue () {
-      //1st event is event itself, rest are queued
-      if(queuedEvents.length > 1) {
-        setTimeout(checkEventQueue, 5);//Wait 5ms and check again
-      } else {
-        processEventQueue(); 
-      }
-    }
+    console.log('*************************event', event.name, event.delay);
+    if(event.delay) setTimeout(processEventQueue, event.delay);
+    else processEventQueue();
 
     function processEventQueue () {
+      var tuple = queue.shift();
+      if(!tuple) return;
+
+      var event = tuple[0],
+          res = tuple[1];
+
+      console.log('#########################', event.name);
+
       db.getInstance(chartName, instanceId, function (err) {
-        if(err) {
-          queuedEvents.splice(0, 1);
-          return res.sendStatus(err.statusCode || 500);
-        }
+        if(err) return res.sendStatus(err.statusCode || 500);
 
         sendEvent(chartName, instanceId, event, function (err, nextConfiguration) {
           if (!util.IsOk(err, res)) return;
 
-          queuedEvents.splice(0, 1);
-
           res.setHeader('X-Configuration',JSON.stringify(nextConfiguration));
           res.send({ name: 'success.event.sent', data: { snapshot: nextConfiguration }});
+
+          processEventQueue();
         });
       });
     }

@@ -55,10 +55,10 @@ function initApi(opts, cb){
   opts.port = opts.port || process.env.PORT || 8002;
   opts.basePath = opts.basePath || '/api/v1';
   opts.dbProvider = opts.dbProvider || require('SCXMLD-simple-database-provider');
-  opts.simulationProvider = opts.simulationProvider || require('SCXMLD-simple-simulation-provider');
+  opts.simulationProvider = opts.simulationProvider || require('SCXMLD-docker-stateless-simulation-provider');
   opts.middlewares = opts.middlewares || [];
 
-  process.env.SEND_URL = (process.env.SCXMLD_URL || ('http://localhost:' + opts.port)) + opts.basePath + '/';
+  process.env.SEND_URL = process.env.SEND_URL || ('http://localhost:' + opts.port + opts.basePath + '/');
 
   if(!opts.app) {
     return cb(new Error('Missing express app'));
