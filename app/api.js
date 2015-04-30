@@ -282,30 +282,15 @@ module.exports = function (simulation, db) {
 
     // Queue logic:
     //
-    // If event has delay
-    //    After delay
-    //      push event to queue
-    //      start processing
-    // Else
-    //    push event to queue
-    //    start processing
+    // push event to queue
+    // start processing
     //
-    // Processing:
-    //    If process is busy, do nothing
-    //    completed process will dequeue the next event
+    // If process is busy, do nothing
+    // completed process will dequeue the next event
 
     var queue = eventQueue[instanceId] = eventQueue[instanceId] || [];
-    
-    if(event.delay) {
-      setTimeout(function () {
-        queue.push([event, res]);
-        processEventQueue();
-      }, event.delay);
-    } else {
-      queue.push([event, res]);
-      processEventQueue();
-    }
 
+    queue.push([event, res]);
     processEventQueue();
 
     function processEventQueue () {
