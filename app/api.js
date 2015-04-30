@@ -267,6 +267,8 @@ module.exports = function (simulation, db) {
   }
 
   var eventQueue = {};
+  var isProcessing = false;
+
   api.sendEvent = function(req, res) {
     var chartName = req.params.StateChartName;
     var instanceId = util.getInstanceId(req),
@@ -278,21 +280,43 @@ module.exports = function (simulation, db) {
       return res.status(400).send({ name: 'error.parsing.json', data: { message: 'Malformed event body.' }});
     }
 
-    var queue = eventQueue[instanceId] = eventQueue[instanceId] || [];
-    queue.push([event, res]);
+    // Queue logic:
+    //
+    // If event has delay
+    //    After delay
+    //      push event to queue
+    //      start processing
+    // Else
+    //    push event to queue
+    //    start processing
+    //
+    // Processing:
+    //    If process is busy, do nothing
+    //    completed process will dequeue the next event
 
-    console.log('*************************event', event.name, event.delay);
-    if(event.delay) setTimeout(processEventQueue, event.delay);
-    else processEventQueue();
+    var queue = eventQueue[instanceId] = eventQueue[instanceId] || [];
+    
+    if(event.delay) {
+      setTimeout(function () {
+        queue.push([event, res]);
+        processEventQueue();
+      }, event.delay);
+    } else {
+      queue.push([event, res]);
+      processEventQueue();
+    }
+
+    processEventQueue();
 
     function processEventQueue () {
+      if(isProcessing || queue.length === 0) return;
+
+      isProcessing = true;
+
       var tuple = queue.shift();
-      if(!tuple) return;
 
       var event = tuple[0],
           res = tuple[1];
-
-      console.log('#########################', event.name);
 
       db.getInstance(chartName, instanceId, function (err) {
         if(err) return res.sendStatus(err.statusCode || 500);
@@ -303,6 +327,7 @@ module.exports = function (simulation, db) {
           res.setHeader('X-Configuration',JSON.stringify(nextConfiguration));
           res.send({ name: 'success.event.sent', data: { snapshot: nextConfiguration }});
 
+          isProcessing = false;
           processEventQueue();
         });
       });
