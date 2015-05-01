@@ -239,10 +239,7 @@ module.exports = function (simulation, db) {
     var instanceId = util.getInstanceId(req);
 
     db.getInstance(chartName, instanceId, function (err, snapshot) {
-      if(!snapshot) return res.sendStatus(404);
-
       if (!util.IsOk(err, res)) return;
-      if(!snapshot) return res.status(404).send({ name: 'error.getting.instance', data: { message: 'Instance not found' }});
 
       res.send({ name: 'success.get.instance', data: { instance: { snapshot: snapshot }}});
     });
@@ -304,10 +301,16 @@ module.exports = function (simulation, db) {
           res = tuple[1];
 
       db.getInstance(chartName, instanceId, function (err) {
-        if(err) return res.sendStatus(err.statusCode || 500);
+        if(err) {
+          isProcessing = false;
+          return res.sendStatus(err.statusCode || 500);
+        }
 
         sendEvent(chartName, instanceId, event, function (err, nextConfiguration) {
-          if (!util.IsOk(err, res)) return;
+          if (!util.IsOk(err, res)) {
+            isProcessing = false;
+            return;
+          }
 
           res.setHeader('X-Configuration',JSON.stringify(nextConfiguration));
           res.send({ name: 'success.event.sent', data: { snapshot: nextConfiguration }});
