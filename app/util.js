@@ -7,7 +7,7 @@ util.IsOk = function (error, response) {
     response.status(error.statusCode || 500).send({
       name: 'error.on.action',
       data: {
-        message: error.message || error
+        message: error
       }
     });
 
