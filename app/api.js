@@ -303,7 +303,7 @@ module.exports = function (simulation, db) {
       db.getInstance(chartName, instanceId, function (err) {
         if(err) {
           isProcessing = false;
-          return res.sendStatus(err.statusCode || 500);
+          return res.status(err.statusCode || 500).send(err);
         }
 
         sendEvent(chartName, instanceId, event, function (err, nextConfiguration) {

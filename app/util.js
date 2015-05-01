@@ -4,7 +4,7 @@ var util = {};
 
 util.IsOk = function (error, response) {
   if (error) {
-    response.status(500).send({
+    response.status(error.statusCode || 500).send({
       name: 'error.on.action',
       data: {
         message: error.message || error
