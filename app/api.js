@@ -38,6 +38,9 @@ module.exports = function (simulation, db) {
     extract.on('entry', function(header, stream, callback) {
       async.parallel([
         function(cb){
+          return db.saveStatechart(req.user, chartName, cb);
+        },
+        function(cb){
           //validate SCXML
           if(header.name === 'index.scxml')  {
             //Read index.scxml file
@@ -133,27 +136,31 @@ module.exports = function (simulation, db) {
       simulation.createStatechart(chartName, scxmlString, function (err) {
         if (!util.IsOk(err, res)) return;
 
-        //save statechart to ceph
-        var req = cephClient.put(chartName, {
-          'Content-Length': Buffer.byteLength(scxmlString),
-          'Content-Type': 'application/scxml+xml'
-        });
-        req.on('response', function(cephResponse){
-          debug('cephResponse.statusCode',cephResponse.statusCode);
-          if(cephResponse.statusCode !== 200){
-            return res.status(500).send({ name: 'error.saving.statechart', data: { chartName: chartName }});
-          }
-
-          broadcastDefinitionChange(chartName);
-
-          res.setHeader('Location', chartName);
-          return res.status(201).send({ name: 'success.create.definition', data: { chartName: chartName }});
-        });
-        req.on('error', function(err){
+        db.saveStatechart(req.user, chartName, function (err) {
           if (!util.IsOk(err, res)) return;
+
+          //save statechart to ceph
+          var req = cephClient.put(chartName, {
+            'Content-Length': Buffer.byteLength(scxmlString),
+            'Content-Type': 'application/scxml+xml'
+          });
+          req.on('response', function(cephResponse){
+            debug('cephResponse.statusCode',cephResponse.statusCode);
+            if(cephResponse.statusCode !== 200){
+              return res.status(500).send({ name: 'error.saving.statechart', data: { chartName: chartName }});
+            }
+
+            broadcastDefinitionChange(chartName);
+
+            res.setHeader('Location', chartName);
+            return res.status(201).send({ name: 'success.create.definition', data: { chartName: chartName }});
+          });
+          req.on('error', function(err){
+            if (!util.IsOk(err, res)) return;
+          });
+          req.end(scxmlString);
         });
-        req.end(scxmlString);
-      });
+      })
     });
   }
 
