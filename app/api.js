@@ -30,73 +30,54 @@ module.exports = function (simulation, db) {
     // 1 - request body has tar stream which goes into tar parser
     // 2 - "on entry" section is storing each file on memory for inspection, validation etc.
     // 3 - files goes into the simulation server
-    var mainFileStr = '', scxmlName;
+    var mainFileStr = '', scxmlName, tempCephFolder = uuid.v1(), isFailed = false;
 
-    var extract = tar.extract(),
-      pack = tar.pack();
+    var extract = tar.extract();
 
     extract.on('entry', function(header, stream, callback) {
-      async.parallel([
-        function(cb){
-          return db.saveStatechart(req.user, chartName, cb);
-        },
-        function(cb){
-          //validate SCXML
-          if(header.name === 'index.scxml')  {
-            //Read index.scxml file
-            stream.on('data', function (c) {
-              mainFileStr += c.toString();
-            });
+      if(header.name === 'index.scxml') {
+        //Read index.scxml file
+        stream.on('data', function (c) {
+          mainFileStr += c.toString();
+        });
 
-            stream.on('end', function () {
-              validate(mainFileStr, function(errors, name) {
-                if(errors) {
-                  console.log('errors on scxml schema');
-                  // TODO: Cancel parsing of tar stream
+        stream.on('end', function () {
+          validate(mainFileStr, function(errors, name) {
+            if(errors) {
+              console.log('errors on scxml schema');
+              // TODO: Cancel parsing of tar stream
 
-                  return res.status(400).send({ name: 'error.xml.schema', data: errors });
-                }
-
-                scxmlName = name;   //capture SCXML name
-                cb(null);
-              });
-            });
-          } else {
-            cb(null);
-          }
-        },
-        function(cb){
-          //save file to ceph
-          cephClient.putStream(
-            stream, 
-            scName + '/' + header.name, 
-            {
-              'Content-Type': 'application/json',
-              'x-amz-acl': 'public-read' 
-            }, 
-            function(err, res){
-              if(err) return cb(err);
-
-              res.setHeader('Location', chartName);
-              res.status(201).send({ name: 'success.create.definition', data: { chartName: chartName }});
-
-              broadcastDefinitionChange(chartName);
+              isFailed = true;
+              return res.status(400).send({ name: 'error.xml.schema', data: errors });
             }
-          );
-        },
-        function(cb){ 
-          //Repack every existing file
-          stream.pipe(pack.entry(header, cb));
-        }
-      ], function(err){
-        if (!util.IsOk(err, res)) return;
+
+            scxmlName = name;   //capture SCXML name
+          });
+        });
+      }
+
+      var cephRequest = cephClient.put(tempCephFolder + '/' + header.name, {
+        'Content-Length': header.size,
+        'Content-Type': 'text/plain'
+      });
+
+      stream.pipe(cephRequest);
+      cephRequest.on('response', function () {
         callback();
+      });
+
+      cephRequest.on('error', function (err) {
+        isFailed = true;
+        
+        callback();
+
+        if (!util.IsOk(err, res)) return;
       });
     });
 
     extract.on('finish', function() {
       // all entries done - lets finalize it
-      processStatechart();
+      if(!isFailed) processStatechart(tempCephFolder);
     });
 
     //Start flowing the stream
@@ -114,13 +95,19 @@ module.exports = function (simulation, db) {
 
       var chartName = scName || scxmlName || uuid.v1();
 
-      simulation.createStatechartWithTar(chartName, pack, function (err) {
+      cephClient.copyFile(tempCephFolder, chartName, function(err){
         if (!util.IsOk(err, res)) return;
 
-        res.setHeader('Location', chartName);
-        res.status(201).send({ name: 'success.create.definition', data: { chartName: chartName }});
+        simulation.createStatechartWithTar(chartName, function (err) {
+          if (!util.IsOk(err, res)) return;
 
-        broadcastDefinitionChange(chartName);
+          db.saveStatechart(req.user, chartName, function () {
+            res.setHeader('Location', chartName);
+            res.status(201).send({ name: 'success.create.definition', data: { chartName: chartName }});
+
+            broadcastDefinitionChange(chartName);
+          });
+        });
       });
     }
   }
