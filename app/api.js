@@ -233,15 +233,23 @@ module.exports = function (simulation, db) {
   api.getStatechartDefinition = function(req, res){
     var chartName = req.params.StateChartName;
 
-    db.getStatechart(chartName, function (err, scxml) {
+    cephClient.getFile(chartName, function(err, cephResponse){
       if (!util.IsOk(err, res)) return;
-      if(!scxml) return res.status(404).send({ name: 'error.getting.statechart', data: { message: 'Statechart definition not found' }});
+      
+      var scxmlString = '';
+      cephResponse.on('data',function(s){
+        scxmlString += s;
+      });
+      cephResponse.on('end',function(){
+        if(!scxmlString) return res.status(404).send({ name: 'error.getting.statechart', data: { message: 'Statechart definition not found' }});
 
-      res.send({ name: 'success.get.definition', data: { scxml: scxml }});
+        res.status(200).type('application/scxml+xml').send(scxmlString);
+      });
     });
   };
 
   api.deleteStatechartDefinition = function(req, res){
+    //TODO: delete definition in ceph
     var chartName = req.params.StateChartName;
 
     // Get list of instances
