@@ -6,6 +6,19 @@ var uuid = require('uuid');
 var validate = require('./validate-scxml').validateCreateScxmlRequest;
 var sse = require('./sse');
 var util = require('./util');
+var knox = require('knox');
+var debug = require('debug')('scxmld');
+
+var cephClient = knox.createClient({
+  port: process.env.CEPH_PORT,
+  bucket: process.env.CEPH_BUCKET,
+  endpoint: process.env.CEPH_HOST,
+  key : process.env.CEPH_KEY,
+  secret : process.env.CEPH_SECRET,
+  style: 'path',
+  secure: false
+});
+
 
 var statechartDefinitionSubscriptions = {};
 
@@ -23,28 +36,59 @@ module.exports = function (simulation, db) {
       pack = tar.pack();
 
     extract.on('entry', function(header, stream, callback) {
-      if(header.name === 'index.scxml')  {
-        //Read index.scxml file
-        stream.on('data', function (c) {
-          mainFileStr += c.toString();
-        });
+      async.parallel([
+        function(cb){
+          //validate SCXML
+          if(header.name === 'index.scxml')  {
+            //Read index.scxml file
+            stream.on('data', function (c) {
+              mainFileStr += c.toString();
+            });
 
-        stream.on('end', function () {
-          validate(mainFileStr, function(errors, name) {
-            if(errors) {
-              console.log('errors on scxml schema');
-              // TODO: Cancel parsing of tar stream
+            stream.on('end', function () {
+              validate(mainFileStr, function(errors, name) {
+                if(errors) {
+                  console.log('errors on scxml schema');
+                  // TODO: Cancel parsing of tar stream
 
-              return res.status(400).send({ name: 'error.xml.schema', data: errors });
+                  return res.status(400).send({ name: 'error.xml.schema', data: errors });
+                }
+
+                scxmlName = name;   //capture SCXML name
+                cb(null);
+              });
+            });
+          } else {
+            cb(null);
+          }
+        },
+        function(cb){
+          //save file to ceph
+          cephClient.putStream(
+            stream, 
+            scName + '/' + header.name, 
+            {
+              'Content-Type': 'application/json',
+              'x-amz-acl': 'public-read' 
+            }, 
+            function(err, res){
+              if(err) return cb(err);
+
+              res.setHeader('Location', chartName);
+              res.status(201).send({ name: 'success.create.definition', data: { chartName: chartName }});
+
+              broadcastDefinitionChange(chartName);
             }
-
-            scxmlName = name;
-          });
-        });
-      }
-
-      //Repack every existing file
-      stream.pipe(pack.entry(header, callback));
+          );
+        },
+        function(cb){ 
+          //Repack every existing file
+          stream.pipe(pack.entry(header, cb));
+        }
+      ], function(err){
+        if (!util.IsOk(err, res)) return;
+        callback();
+      });
     });
 
     extract.on('finish', function() {
@@ -70,14 +114,10 @@ module.exports = function (simulation, db) {
       simulation.createStatechartWithTar(chartName, pack, function (err) {
         if (!util.IsOk(err, res)) return;
 
-        db.saveStatechart(req.user, chartName, mainFileStr, function (err) {
-          if (!util.IsOk(err, res)) return;
+        res.setHeader('Location', chartName);
+        res.status(201).send({ name: 'success.create.definition', data: { chartName: chartName }});
 
-          res.setHeader('Location', chartName);
-          res.status(201).send({ name: 'success.create.definition', data: { chartName: chartName }});
-
-          broadcastDefinitionChange(chartName);
-        });
+        broadcastDefinitionChange(chartName);
       });
     }
   }
@@ -93,14 +133,26 @@ module.exports = function (simulation, db) {
       simulation.createStatechart(chartName, scxmlString, function (err) {
         if (!util.IsOk(err, res)) return;
 
-        db.saveStatechart(req.user, chartName, scxmlString, function (err) {
-          if (!util.IsOk(err, res)) return;
-
-          res.setHeader('Location', chartName);
-          res.status(201).send({ name: 'success.create.definition', data: { chartName: chartName }});
+        //save statechart to ceph
+        var req = cephClient.put(chartName, {
+          'Content-Length': Buffer.byteLength(scxmlString),
+          'Content-Type': 'application/scxml+xml'
+        });
+        req.on('response', function(cephResponse){
+          debug('cephResponse.statusCode',cephResponse.statusCode);
+          if(cephResponse.statusCode !== 200){
+            return res.status(500).send({ name: 'error.saving.statechart', data: { chartName: chartName }});
+          }
 
           broadcastDefinitionChange(chartName);
+
+          res.setHeader('Location', chartName);
+          return res.status(201).send({ name: 'success.create.definition', data: { chartName: chartName }});
         });
+        req.on('error', function(err){
+          if (!util.IsOk(err, res)) return;
+        });
+        req.end(scxmlString);
       });
     });
   }
@@ -122,12 +174,21 @@ module.exports = function (simulation, db) {
   };
 
   function createInstance(chartName, instanceId, done){
-    db.getStatechart(chartName, function (err, scxml) {
-      if(!scxml) return done({ error: { statusCode: 404 } });
 
-      simulation.createInstance(chartName, instanceId, function (err, instanceId) {
-        db.saveInstance(chartName, instanceId, null, function () {
-          done(err, instanceId);
+    cephClient.getFile(chartName, function(err, cephResponse){
+      
+      var scxmlString = '';
+      cephResponse.on('data',function(s){
+        scxmlString += s;
+      });
+      cephResponse.on('end',function(){
+        if(!scxmlString) return done({ error: { statusCode: 404 } });
+
+        simulation.createInstance(chartName, instanceId, function (err, instanceId) {
+          debug('simulation.createInstance response',chartName, instanceId, null);
+          db.saveInstance(chartName, instanceId, null, function () {
+            done(err, instanceId);
+          });
         });
       });
     });

@@ -155,6 +155,9 @@ if(require.main === module) {
   if(process.env.SIMULATION_PROVIDER){
     opts.simulationProvider = require(process.env.SIMULATION_PROVIDER);
   }
+  if(process.env.DB_PROVIDER){
+    opts.dbProvider = require(process.env.DB_PROVIDER);
+  }
   initExpress(opts, function (err, opts) {
     console.log('Starting server on port:', opts.port);
     if(err) throw err;
