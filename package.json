@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "SCXMLD-postgres-database-provider": "git://github.com/JacobeanRnD/SCXMLD-postgres-database-provider#a322b8853b2d3355a83bf74379fd1d35cbd48686",
-    "SCXMLD-docker-stateless-simulation-provider": "git://github.com/JacobeanRnD/SCXMLD-docker-stateless-simulation-provider#a156ea946de8c6ad3f9330f6b9c015849e62f562",
+    "SCXMLD-stateless-remote-simulation-provider": "git://github.com/JacobeanRnD/SCXMLD-stateless-remote-simulation-provider#3cdda3482cd426358b3998c4d9cb66aa2845db68",
     "async": "^0.9.0",
     "bower": "~1.4.1",
     "cors": "^2.5.3",
