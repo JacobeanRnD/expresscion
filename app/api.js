@@ -147,7 +147,7 @@ module.exports = function (simulation, db) {
           });
           req.end(scxmlString);
         });
-      })
+      });
     });
   }
 
@@ -230,7 +230,7 @@ module.exports = function (simulation, db) {
       cephResponse.on('end',function(){
         if(!scxmlString) return res.status(404).send({ name: 'error.getting.statechart', data: { message: 'Statechart definition not found' }});
 
-        res.status(200).type('application/scxml+xml').send(scxmlString);
+        res.send({ name: 'success.get.definition', data: { scxml: scxmlString }});
       });
     });
   };
@@ -308,8 +308,8 @@ module.exports = function (simulation, db) {
     });
   };
 
-  function sendEvent (chartName, instanceId, event, done) {
-    simulation.sendEvent(instanceId, event, function (err, conf) {
+  function sendEvent (chartName, instanceId, event, sendUrl, done) {
+    simulation.sendEvent(instanceId, event, sendUrl, function (err, conf) {
       if(err) return done(err);
 
       db.saveInstance(chartName, instanceId, conf, function () {
@@ -369,7 +369,9 @@ module.exports = function (simulation, db) {
           return res.status(err.statusCode || 500).send(err);
         }
 
-        sendEvent(chartName, instanceId, event, function (err, nextConfiguration) {
+        var sendUrl = req.protocol + '://' + req.get('Host') + req.url;
+
+        sendEvent(chartName, instanceId, event, sendUrl, function (err, nextConfiguration) {
           if (!util.IsOk(err, res)) {
             isProcessing = false;
             return;
