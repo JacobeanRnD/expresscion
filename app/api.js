@@ -147,7 +147,7 @@ module.exports = function (simulation, db) {
           });
           req.end(scxmlString);
         });
-      })
+      });
     });
   }
 
@@ -230,7 +230,7 @@ module.exports = function (simulation, db) {
       cephResponse.on('end',function(){
         if(!scxmlString) return res.status(404).send({ name: 'error.getting.statechart', data: { message: 'Statechart definition not found' }});
 
-        res.status(200).type('application/scxml+xml').send(scxmlString);
+        res.send({ name: 'success.get.definition', data: { scxml: scxmlString }});
       });
     });
   };
