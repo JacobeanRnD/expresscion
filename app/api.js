@@ -230,7 +230,7 @@ module.exports = function (simulation, db) {
       cephResponse.on('end',function(){
         if(!scxmlString) return res.status(404).send({ name: 'error.getting.statechart', data: { message: 'Statechart definition not found' }});
 
-        res.send({ name: 'success.get.definition', data: { scxml: scxmlString }});
+        res.type('application/scxml+xml').send(scxmlString);    //return XML instead of JSON
       });
     });
   };
@@ -309,7 +309,7 @@ module.exports = function (simulation, db) {
   };
 
   function sendEvent (chartName, instanceId, event, sendUrl, done) {
-    simulation.sendEvent(instanceId, event, sendUrl, function (err, conf) {
+    simulation.sendEvent(instanceId, event, sendUrl, function (err, conf, wait) {
       if(err) return done(err);
 
       db.saveInstance(chartName, instanceId, conf, function () {
@@ -323,7 +323,7 @@ module.exports = function (simulation, db) {
           done(err, conf[0]);
         });
       });
-    });
+    }, respond);
   }
 
   var eventQueue = {};
@@ -350,6 +350,8 @@ module.exports = function (simulation, db) {
 
     var queue = eventQueue[instanceId] = eventQueue[instanceId] || [];
 
+    event.uuid = uuid.v1(); //tag him with a uuid
+
     queue.push([event, res]);
     processEventQueue();
 
@@ -371,21 +373,34 @@ module.exports = function (simulation, db) {
 
         var sendUrl = req.protocol + '://' + req.get('Host') + req.url;
 
+        pendingResponses[event.uuid] = res;   //save the response
+
         sendEvent(chartName, instanceId, event, sendUrl, function (err, nextConfiguration) {
-          if (!util.IsOk(err, res)) {
-            isProcessing = false;
-            return;
-          }
-
-          res.setHeader('X-Configuration',JSON.stringify(nextConfiguration));
-          res.send({ name: 'success.event.sent', data: { snapshot: nextConfiguration }});
-
+          console.log('sendEvent response',err, nextConfiguration);
           isProcessing = false;
+
+          if (!util.IsOk(err, res)) return;
+
           processEventQueue();
         });
       });
     }
   };
+
+  var pendingResponses = {};
+
+  function respond(eventUuid, snapshot, customData){
+    var res = pendingResponses[eventUuid];
+    if(!res) return;      //this can happen if, for example, 
+                          //the server dies before the response has been released
+    if(snapshot){
+      res.setHeader('X-Configuration',JSON.stringify(snapshot));
+      res.send({ name: 'success.event.sent', data: { snapshot: snapshot }});
+    }else{
+      res.send(customData);
+    }
+    delete pendingResponses[eventUuid];
+  }
 
   function deleteInstance (chartName, instanceId, done) {
     simulation.unregisterAllListeners(instanceId, function () {
@@ -423,7 +438,7 @@ module.exports = function (simulation, db) {
       instanceId = util.getInstanceId(req);
 
     db.getInstance(chartName, instanceId, function (err, exists) {
-      if(!exists) return res.sendStatus(404);
+      if(typeof exists === 'undefined') return res.sendStatus(404);
 
       res.render('viz.html', {
         type: 'instance'
