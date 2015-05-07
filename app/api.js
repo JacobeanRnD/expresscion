@@ -169,7 +169,7 @@ module.exports = function (simulation, db) {
 
   function createInstance(chartName, instanceId, done){
 
-    cephClient.getFile(chartName, function(err, cephResponse){
+    cephClient.getFile(chartName + '/index.scxml', function(err, cephResponse){
       
       var scxmlString = '';
       cephResponse.on('data',function(s){
@@ -195,16 +195,20 @@ module.exports = function (simulation, db) {
   api.createNamedInstance = function(req, res){
     var chartName = req.params.StateChartName;
 
-    db.getInstance(chartName, chartName + '/' + req.params.InstanceId, function (err, exists) {
-      if(exists) return res.status(409).send({ name: 'error.creating.instance', data: { message: 'InstanceId is already associated with an instance' }});
+    db.getStatechart(chartName, function (err, scxml) {
+      if (!util.IsOk(err, res)) return;
 
-      createInstance(chartName, req.params.InstanceId, function (err, instanceId) {
-        if (!util.IsOk(err, res)) return;
-        if(err && err.statusCode === 404) return res.status(404).send({ name: 'error.getting.statechart', data: { message: 'Statechart definition not found' }});
+      db.getInstance(chartName, chartName + '/' + req.params.InstanceId, function (err, exists) {
+        if(exists) return res.status(409).send({ name: 'error.creating.instance', data: { message: 'InstanceId is already associated with an instance' }});
 
-        res.setHeader('Location', instanceId);
+        createInstance(chartName, req.params.InstanceId, function (err, instanceId) {
+          if (!util.IsOk(err, res)) return;
+          if(err && err.statusCode === 404) return res.status(404).send({ name: 'error.getting.statechart', data: { message: 'Statechart definition not found' }});
 
-        res.status(201).send({ name: 'success.create.instance', data: { id: util.getShortInstanceId(instanceId) }});
+          res.setHeader('Location', instanceId);
+
+          res.status(201).send({ name: 'success.create.instance', data: { id: util.getShortInstanceId(instanceId) }});
+        });
       });
     });
   };
@@ -220,7 +224,7 @@ module.exports = function (simulation, db) {
   api.getStatechartDefinition = function(req, res){
     var chartName = req.params.StateChartName;
 
-    cephClient.getFile(chartName, function(err, cephResponse){
+    cephClient.getFile(chartName + '/index.scxml', function(err, cephResponse){
       if (!util.IsOk(err, res)) return;
       
       var scxmlString = '';
@@ -308,8 +312,8 @@ module.exports = function (simulation, db) {
     });
   };
 
-  function sendEvent (chartName, instanceId, event, sendUrl, done) {
-    simulation.sendEvent(instanceId, event, sendUrl, function (err, conf, wait) {
+  function sendEvent (chartName, instanceId, event, sendUrl, eventUuid, done) {
+    simulation.sendEvent(instanceId, event, sendUrl, eventUuid, function (err, conf, wait) {
       if(err) return done(err);
 
       db.saveInstance(chartName, instanceId, conf, function () {
@@ -350,8 +354,6 @@ module.exports = function (simulation, db) {
 
     var queue = eventQueue[instanceId] = eventQueue[instanceId] || [];
 
-    event.uuid = uuid.v1(); //tag him with a uuid
-
     queue.push([event, res]);
     processEventQueue();
 
@@ -359,6 +361,7 @@ module.exports = function (simulation, db) {
       if(isProcessing || queue.length === 0) return;
 
       isProcessing = true;
+      var eventUuid = uuid.v1(); //tag him with a uuid
 
       var tuple = queue.shift();
 
@@ -373,10 +376,9 @@ module.exports = function (simulation, db) {
 
         var sendUrl = req.protocol + '://' + req.get('Host') + req.url;
 
-        pendingResponses[event.uuid] = res;   //save the response
+        pendingResponses[eventUuid] = res;   //save the response
 
-        sendEvent(chartName, instanceId, event, sendUrl, function (err, nextConfiguration) {
-          console.log('sendEvent response',err, nextConfiguration);
+        sendEvent(chartName, instanceId, event, sendUrl, eventUuid, function (err, nextConfiguration) {
           isProcessing = false;
 
           if (!util.IsOk(err, res)) return;
@@ -394,8 +396,8 @@ module.exports = function (simulation, db) {
     if(!res) return;      //this can happen if, for example, 
                           //the server dies before the response has been released
     if(snapshot){
-      res.setHeader('X-Configuration',JSON.stringify(snapshot));
-      res.send({ name: 'success.event.sent', data: { snapshot: snapshot }});
+      res.setHeader('X-Configuration',JSON.stringify(snapshot[0]));
+      res.send({ name: 'success.event.sent', data: { snapshot: snapshot[0] }});
     }else{
       res.send(customData);
     }
