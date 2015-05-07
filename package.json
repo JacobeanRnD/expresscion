@@ -4,7 +4,7 @@
   "version": "0.0.2a",
   "homepage": "https://github.com/JacobeanRnD/SCXMLD",
   "main": "./index.js",
-  "license": "Apache-2.0",
+  "license": "AGPL-3.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/JacobeanRnD/SCXMLD.git"
