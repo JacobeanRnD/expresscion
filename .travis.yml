@@ -15,7 +15,7 @@ before_install:
 - curl -XPUT http://localhost:4568/scxmldtests
 - export WEBSITE_URL='http://scxmldev.io'
 - export CEPH_PORT='4568'
-- export CEPH_BUCKET='tmp/scxmldtests'
+- export CEPH_BUCKET='scxmldtests'
 - export CEPH_HOST='localhost'
 - export CEPH_KEY='test'
 - export CEPH_SECRET='test'
