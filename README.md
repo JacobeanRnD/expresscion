@@ -29,3 +29,14 @@ API.
 ### Video Demonstration
 
 [![Video Demonstration](http://img.youtube.com/vi/SVLKaAV15LQ/0.jpg)](https://www.youtube.com/embed/SVLKaAV15LQ)
+
+
+## Environment variables
+
+* REDIS_URL
+* CEPH_*:
+  - CEPH_BUCKET
+  - CEPH_HOST
+  - CEPH_KEY
+  - CEPH_SECRET
+

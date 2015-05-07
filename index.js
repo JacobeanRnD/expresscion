@@ -58,9 +58,20 @@ function initApi(opts, cb){
   opts.simulationProvider = opts.simulationProvider || require('SCXMLD-simple-simulation-provider');
   opts.middlewares = opts.middlewares || [];
 
+  process.env.SEND_URL = process.env.SEND_URL || ('http://localhost:' + opts.port + opts.basePath + '/');
+
   if(!opts.app) {
     return cb(new Error('Missing express app'));
   }
+
+  var totalRequestCount = 0;
+  opts.app.use(function (req, res, next) {
+    //We are providing an id to each request and response
+    //So we can unregister "_changes" listeners on stateless servers
+    req.uniqueId = res.uniqueId = totalRequestCount++;
+
+    next();
+  });
 
   var db = opts.dbProvider();
 
@@ -143,6 +154,9 @@ if(require.main === module) {
   var opts = {};
   if(process.env.SIMULATION_PROVIDER){
     opts.simulationProvider = require(process.env.SIMULATION_PROVIDER);
+  }
+  if(process.env.DB_PROVIDER){
+    opts.dbProvider = require(process.env.DB_PROVIDER);
   }
   initExpress(opts, function (err, opts) {
     console.log('Starting server on port:', opts.port);
