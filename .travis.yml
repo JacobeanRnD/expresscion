@@ -11,7 +11,7 @@ before_install:
 - npm i -g istanbul
 - npm install s3rver -g
 - mkdir s3dir
-- s3rver -d s3dir/ -h localhost -p 4568 & sleep 100
+- s3rver -d s3dir/ -h localhost -p 4568 & sleep 3
 - curl -XPUT http://localhost:4568/scxmldtests
 - export WEBSITE_URL='http://scxmldev.io'
 - export CEPH_PORT='4568'
