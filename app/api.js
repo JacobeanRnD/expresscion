@@ -30,7 +30,7 @@ module.exports = function (simulation, db) {
     // 1 - request body has tar stream which goes into tar parser
     // 2 - "on entry" section is storing each file on memory for inspection, validation etc.
     // 3 - files goes into the simulation server
-    var mainFileStr = '', scxmlName, tempCephFolder = uuid.v1(), isFailed = false;
+    var mainFileStr = '', scxmlName, tempCephFolder = uuid.v1(), isFailed = false, fileList = [];
 
     var extract = tar.extract();
 
@@ -56,6 +56,7 @@ module.exports = function (simulation, db) {
         });
       }
 
+      fileList.push(header.name);
       var cephRequest = cephClient.put(tempCephFolder + '/' + header.name, {
         'Content-Length': header.size,
         'Content-Type': 'text/plain'
@@ -95,17 +96,24 @@ module.exports = function (simulation, db) {
 
       var chartName = scName || scxmlName || uuid.v1();
 
-      cephClient.copyFile(tempCephFolder, chartName, function(err){
+      cephClient.deleteFile(chartName, function(err){
         if (!util.IsOk(err, res)) return;
 
-        simulation.createStatechartWithTar(chartName, function (err) {
+        async.each(fileList, function (fileName, done) {
+          //Copy each file
+          cephClient.copyFile(tempCephFolder + '/' + fileName, chartName + '/' + fileName, done);
+        }, function(err){
           if (!util.IsOk(err, res)) return;
 
-          db.saveStatechart(req.user, chartName, function () {
-            res.setHeader('Location', chartName);
-            res.status(201).send({ name: 'success.create.definition', data: { chartName: chartName }});
+          simulation.createStatechartWithTar(chartName, function (err) {
+            if (!util.IsOk(err, res)) return;
 
-            broadcastDefinitionChange(chartName);
+            db.saveStatechart(req.user, chartName, function () {
+              res.setHeader('Location', chartName);
+              res.status(201).send({ name: 'success.create.definition', data: { chartName: chartName }});
+
+              broadcastDefinitionChange(chartName);
+            });
           });
         });
       });
@@ -120,34 +128,26 @@ module.exports = function (simulation, db) {
 
       var chartName = scName || scxmlName || uuid.v1();
 
-      simulation.createStatechart(chartName, scxmlString, function (err) {
+      cephClient.deleteFile(chartName, function(err){
         if (!util.IsOk(err, res)) return;
 
-        db.saveStatechart(req.user, chartName, function (err) {
+        cephClient.putBuffer(scxmlString, chartName + '/index.scxml', function(err){
           if (!util.IsOk(err, res)) return;
 
-          //save statechart to ceph
-          var req = cephClient.put(chartName, {
-            'Content-Length': Buffer.byteLength(scxmlString),
-            'Content-Type': 'application/scxml+xml'
-          });
-          req.on('response', function(cephResponse){
-            debug('cephResponse.statusCode',cephResponse.statusCode);
-            if(cephResponse.statusCode !== 200){
-              return res.status(500).send({ name: 'error.saving.statechart', data: { chartName: chartName }});
-            }
-
-            broadcastDefinitionChange(chartName);
-
-            res.setHeader('Location', chartName);
-            return res.status(201).send({ name: 'success.create.definition', data: { chartName: chartName }});
-          });
-          req.on('error', function(err){
+          simulation.createStatechart(chartName, scxmlString, function (err) {
             if (!util.IsOk(err, res)) return;
+
+            db.saveStatechart(req.user, chartName, function (err) {
+              if (!util.IsOk(err, res)) return;
+
+              broadcastDefinitionChange(chartName);
+
+              res.setHeader('Location', chartName);
+              return res.status(201).send({ name: 'success.create.definition', data: { chartName: chartName }});
+            });
           });
-          req.end(scxmlString);
         });
-      });
+      });        
     });
   }
 

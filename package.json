@@ -26,8 +26,8 @@
     "scxmld": "index.js"
   },
   "dependencies": {
-    "SCXMLD-postgres-database-provider": "git://github.com/JacobeanRnD/SCXMLD-postgres-database-provider#85de52b9b75921c15adb19be8e9475857f8d9032",
-    "SCXMLD-stateless-remote-simulation-provider": "git://github.com/JacobeanRnD/SCXMLD-stateless-remote-simulation-provider#f643a07e9659f4dbda75c3a9eeca60e6ddab7b27",
+    "SCXMLD-simple-simulation-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-simulation-provider#140718459a4350d2603cbafca63a72d0bbf5bb21",
+    "SCXMLD-simple-database-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-database-provider#a17477f15c0069656afe8c34c4f1f22937b3093a",
     "async": "^0.9.0",
     "bower": "~1.4.1",
     "cors": "^2.5.3",
