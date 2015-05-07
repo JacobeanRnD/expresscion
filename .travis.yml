@@ -17,3 +17,5 @@ before_install:
 - export CEPH_PORT='4568'
 - export CEPH_BUCKET='tmp/scxmldtests'
 - export CEPH_HOST='localhost'
+- export CEPH_KEY='test'
+- export CEPH_SECRET='test'
