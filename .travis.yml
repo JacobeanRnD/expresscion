@@ -8,5 +8,10 @@ before_install:
 - npm i -g jasmine@2.2.0
 - npm i -g istanbul
 - npm i -g npm@2.8.1
+- npm install s3rver -g
 - jshint . 
+- mkdir s3dir && s3rver -d s3dir/ & curl -XPUT 'localhost:4568/scxmldtests'
 - export WEBSITE_URL='http://scxmldev.io'
+- export CEPH_PORT='4568'
+- export CEPH_BUCKET='tmp/scxmldtests'
+- export CEPH_HOST='localhost'
