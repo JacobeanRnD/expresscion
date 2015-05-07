@@ -398,8 +398,8 @@ module.exports = function (simulation, db) {
     if(!res) return;      //this can happen if, for example, 
                           //the server dies before the response has been released
     if(snapshot){
-      res.setHeader('X-Configuration',JSON.stringify(snapshot));
-      res.send({ name: 'success.event.sent', data: { snapshot: snapshot }});
+      res.setHeader('X-Configuration',JSON.stringify(snapshot[0]));
+      res.send({ name: 'success.event.sent', data: { snapshot: snapshot[0] }});
     }else{
       res.send(customData);
     }
