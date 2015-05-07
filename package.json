@@ -26,8 +26,8 @@
     "scxmld": "index.js"
   },
   "dependencies": {
-    "SCXMLD-simple-simulation-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-simulation-provider#140718459a4350d2603cbafca63a72d0bbf5bb21",
-    "SCXMLD-simple-database-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-database-provider#a17477f15c0069656afe8c34c4f1f22937b3093a",
+    "SCXMLD-simple-simulation-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-simulation-provider#3c37395f850409a45fc75a2f4ee7b67a221925d3",
+    "SCXMLD-simple-database-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-database-provider#140718459a4350d2603cbafca63a72d0bbf5bb21",
     "async": "^0.9.0",
     "bower": "~1.4.1",
     "cors": "^2.5.3",
@@ -38,7 +38,7 @@
     "libxmljs": "0.11.0",
     "morgan": "^1.5.2",
     "redis": "^0.12.1",
-    "smaas-swagger-spec": "git://github.com/JacobeanRnD/SMaaS-swagger-spec.git#646d1df1c6a04be08edf8b923651777e46176187",
+    "smaas-swagger-spec": "git://github.com/JacobeanRnD/SMaaS-swagger-spec.git#a9a789eee298569cc772ee9d8ba17cf606529a30",
     "tar-stream": "^1.1.4",
     "underscore": "^1.8.3",
     "uuid": "^2.0.1"
