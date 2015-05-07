@@ -169,7 +169,7 @@ module.exports = function (simulation, db) {
 
   function createInstance(chartName, instanceId, done){
 
-    cephClient.getFile(chartName, function(err, cephResponse){
+    cephClient.getFile(chartName + '/index.scxml', function(err, cephResponse){
       
       var scxmlString = '';
       cephResponse.on('data',function(s){
@@ -195,16 +195,20 @@ module.exports = function (simulation, db) {
   api.createNamedInstance = function(req, res){
     var chartName = req.params.StateChartName;
 
-    db.getInstance(chartName, chartName + '/' + req.params.InstanceId, function (err, exists) {
-      if(exists) return res.status(409).send({ name: 'error.creating.instance', data: { message: 'InstanceId is already associated with an instance' }});
+    db.getStatechart(chartName, function (err, scxml) {
+      if (!util.IsOk(err, res)) return;
 
-      createInstance(chartName, req.params.InstanceId, function (err, instanceId) {
-        if (!util.IsOk(err, res)) return;
-        if(err && err.statusCode === 404) return res.status(404).send({ name: 'error.getting.statechart', data: { message: 'Statechart definition not found' }});
+      db.getInstance(chartName, chartName + '/' + req.params.InstanceId, function (err, exists) {
+        if(exists) return res.status(409).send({ name: 'error.creating.instance', data: { message: 'InstanceId is already associated with an instance' }});
 
-        res.setHeader('Location', instanceId);
+        createInstance(chartName, req.params.InstanceId, function (err, instanceId) {
+          if (!util.IsOk(err, res)) return;
+          if(err && err.statusCode === 404) return res.status(404).send({ name: 'error.getting.statechart', data: { message: 'Statechart definition not found' }});
 
-        res.status(201).send({ name: 'success.create.instance', data: { id: util.getShortInstanceId(instanceId) }});
+          res.setHeader('Location', instanceId);
+
+          res.status(201).send({ name: 'success.create.instance', data: { id: util.getShortInstanceId(instanceId) }});
+        });
       });
     });
   };
@@ -220,7 +224,7 @@ module.exports = function (simulation, db) {
   api.getStatechartDefinition = function(req, res){
     var chartName = req.params.StateChartName;
 
-    cephClient.getFile(chartName, function(err, cephResponse){
+    cephClient.getFile(chartName + '/index.scxml', function(err, cephResponse){
       if (!util.IsOk(err, res)) return;
       
       var scxmlString = '';
