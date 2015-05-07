@@ -4,13 +4,14 @@ node_js:
 - 0.11
 - 0.12
 before_install:
+- npm i -g npm@2.8.1
 - npm i -g jshint
+- jshint . 
 - npm i -g jasmine@2.2.0
 - npm i -g istanbul
-- npm i -g npm@2.8.1
 - npm install s3rver -g
-- jshint . 
-- mkdir s3dir && s3rver -d s3dir & disown
+- mkdir s3dir
+- s3rver -d s3dir/ -h localhost -p 4568 & disown
 - curl -XPUT http://localhost:4568/scxmldtests
 - export WEBSITE_URL='http://scxmldev.io'
 - export CEPH_PORT='4568'
