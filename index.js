@@ -55,7 +55,7 @@ function initApi(opts, cb){
   opts.port = opts.port || process.env.PORT || 8002;
   opts.basePath = opts.basePath || '/api/v1';
   opts.dbProvider = opts.dbProvider || require('SCXMLD-simple-database-provider');
-  opts.simulationProvider = opts.simulationProvider || require('SCXMLD-docker-stateless-simulation-provider');
+  opts.simulationProvider = opts.simulationProvider || require('SCXMLD-simple-simulation-provider');
   opts.middlewares = opts.middlewares || [];
 
   process.env.SEND_URL = process.env.SEND_URL || ('http://localhost:' + opts.port + opts.basePath + '/');
@@ -154,6 +154,9 @@ if(require.main === module) {
   var opts = {};
   if(process.env.SIMULATION_PROVIDER){
     opts.simulationProvider = require(process.env.SIMULATION_PROVIDER);
+  }
+  if(process.env.DB_PROVIDER){
+    opts.dbProvider = require(process.env.DB_PROVIDER);
   }
   initExpress(opts, function (err, opts) {
     console.log('Starting server on port:', opts.port);
