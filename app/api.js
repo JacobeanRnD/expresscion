@@ -224,7 +224,12 @@ module.exports = function (simulation, db) {
   api.getStatechartDefinition = function(req, res){
     var chartName = req.params.StateChartName;
 
+    debug('getting chartName',chartName + '/index.scxml');
     cephClient.getFile(chartName + '/index.scxml', function(err, cephResponse){
+      debug(cephResponse.statusCode,cephResponse.statusCode);
+
+      if(cephResponse.statusCode !== 200) return res.status(404).send({ name: 'error.getting.statechart', data: { message: 'Statechart definition not found' }});
+
       if (!util.IsOk(err, res)) return;
       
       var scxmlString = '';
