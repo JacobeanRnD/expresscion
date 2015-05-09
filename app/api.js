@@ -317,8 +317,8 @@ module.exports = function (simulation, db) {
     });
   };
 
-  function sendEvent (chartName, instanceId, event, sendUrl, done) {
-    simulation.sendEvent(instanceId, event, sendUrl, function (err, conf, wait) {
+  function sendEvent (chartName, instanceId, event, sendUrl, eventUuid, done) {
+    simulation.sendEvent(instanceId, event, sendUrl, eventUuid, function (err, conf, wait) {
       if(err) return done(err);
 
       db.saveInstance(chartName, instanceId, conf, function () {
@@ -359,8 +359,6 @@ module.exports = function (simulation, db) {
 
     var queue = eventQueue[instanceId] = eventQueue[instanceId] || [];
 
-    event.uuid = uuid.v1(); //tag him with a uuid
-
     queue.push([event, res]);
     processEventQueue();
 
@@ -368,6 +366,7 @@ module.exports = function (simulation, db) {
       if(isProcessing || queue.length === 0) return;
 
       isProcessing = true;
+      var eventUuid = uuid.v1(); //tag him with a uuid
 
       var tuple = queue.shift();
 
@@ -382,10 +381,9 @@ module.exports = function (simulation, db) {
 
         var sendUrl = req.protocol + '://' + req.get('Host') + req.url;
 
-        pendingResponses[event.uuid] = res;   //save the response
+        pendingResponses[eventUuid] = res;   //save the response
 
-        sendEvent(chartName, instanceId, event, sendUrl, function (err, nextConfiguration) {
-          console.log('sendEvent response',err, nextConfiguration);
+        sendEvent(chartName, instanceId, event, sendUrl, eventUuid, function (err, nextConfiguration) {
           isProcessing = false;
 
           if (!util.IsOk(err, res)) return;
