@@ -317,8 +317,8 @@ module.exports = function (simulation, db) {
     });
   };
 
-  function sendEvent (chartName, instanceId, event, sendUrl, eventUuid, done) {
-    simulation.sendEvent(instanceId, event, sendUrl, eventUuid, function (err, conf, wait) {
+  function sendEvent (chartName, instanceId, event, sendOptions, eventUuid, done) {
+    simulation.sendEvent(instanceId, event, sendOptions, eventUuid, function (err, conf, wait) {
       if(err) return done(err);
 
       db.saveInstance(chartName, instanceId, conf, function () {
@@ -379,11 +379,24 @@ module.exports = function (simulation, db) {
           return res.status(err.statusCode || 500).send(err);
         }
 
-        var sendUrl = req.protocol + '://' + req.get('Host') + req.url;
+        var sendOptions = {
+          uri: req.protocol + '://' + req.get('Host') + req.url,
+          method: req.method
+        };
+
+        if(req.headers.authorization) {
+          sendOptions.headers = {
+            Authorization: req.headers.authorization
+          };
+        }
+
+        if(req.cookies) {
+          sendOptions.cookies = req.cookies;
+        }
 
         pendingResponses[eventUuid] = res;   //save the response
 
-        sendEvent(chartName, instanceId, event, sendUrl, eventUuid, function (err, nextConfiguration) {
+        sendEvent(chartName, instanceId, event, sendOptions, eventUuid, function (err, nextConfiguration) {
           isProcessing = false;
 
           if (!util.IsOk(err, res)) return;
