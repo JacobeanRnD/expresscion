@@ -6,7 +6,7 @@ var smaasApi = require('./app/api'),
   cors = require('cors');
 
 function initExpress (opts, cb) {
-  opts = opts || {};
+  opts = opts || {};
   opts.port = opts.port || process.env.PORT || 8002;
 
   var express = require('express'),
@@ -51,21 +51,16 @@ function initExpress (opts, cb) {
 }
 
 function initApi(opts, cb){
-  opts = opts || {};
+  opts = opts || {};
   opts.port = opts.port || process.env.PORT || 8002;
-  opts.basePath = opts.basePath || '/api/v1';
-  opts.dbProvider = opts.dbProvider || 'SCXMLD-simple-database-provider';
-  opts.simulationProvider = opts.simulationProvider || 'SCXMLD-simple-simulation-provider';
-  opts.middlewares = opts.middlewares || [];
-
-  console.log('starting server with DB_PROVIDER', opts.dbProvider, 'SIMULATION_PROVIDER', opts.simulationProvider);
-
-  var dbProviderModule = require(opts.dbProvider)
-  var simulationProviderModule = require(opts.simulationProvider);
+  opts.basePath = opts.basePath || '/api/v1';
+  opts.dbProvider = opts.dbProvider || require('SCXMLD-simple-database-provider');
+  opts.simulationProvider = opts.simulationProvider || require('SCXMLD-simple-simulation-provider');
+  opts.middlewares = opts.middlewares || [];
 
   process.env.SEND_URL = process.env.SEND_URL || ('http://localhost:' + opts.port + opts.basePath + '/');
 
-  if(!opts.app) {
+  if(!opts.app) {
     return cb(new Error('Missing express app'));
   }
 
@@ -78,7 +73,7 @@ function initApi(opts, cb){
     next();
   });
 
-  var db = dbProviderModule();
+  var db = opts.dbProvider();
 
   db.init(function (err) {
     if(err) return cb(err);
@@ -86,7 +81,7 @@ function initApi(opts, cb){
     console.log('Db initialized');
 
     // Initialize the api
-    var simulation = simulationProviderModule(db);
+    var simulation = opts.simulationProvider(db);
 
     var api = smaasApi(simulation, db);
 
@@ -158,10 +153,10 @@ function initApi(opts, cb){
 if(require.main === module) {
   var opts = {};
   if(process.env.SIMULATION_PROVIDER){
-    opts.simulationProvider = process.env.SIMULATION_PROVIDER;
+    opts.simulationProvider = require(process.env.SIMULATION_PROVIDER);
   }
   if(process.env.DB_PROVIDER){
-    opts.dbProvider = process.env.DB_PROVIDER;
+    opts.dbProvider = require(process.env.DB_PROVIDER);
   }
   initExpress(opts, function (err, opts) {
     console.log('Starting server on port:', opts.port);
