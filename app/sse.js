@@ -17,7 +17,7 @@ exports.initStream = function(req, res, closeCb){
   }, 30 * 1000);
 
   //clean up
-  req.on('close', function() {
+  res.on('finish', function() {
     closeCb();
     clearInterval(handle);
   });

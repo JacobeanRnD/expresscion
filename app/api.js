@@ -423,10 +423,14 @@ module.exports = function (simulation, db) {
     var chartName = req.params.StateChartName,
       instanceId = util.getInstanceId(req);
 
-    deleteInstance(chartName, instanceId, function (err) {
+    simulation.unregisterListener(instanceId, res, function(err){
       if (!util.IsOk(err, res)) return;
 
-      res.send({ name: 'success.deleting.instance', data: { message: 'Instance deleted successfully.' }});
+      deleteInstance(chartName, instanceId, function (err) {
+        if (!util.IsOk(err, res)) return;
+
+        res.send({ name: 'success.deleting.instance', data: { message: 'Instance deleted successfully.' }});
+      });
     });
   };
 
@@ -435,7 +439,7 @@ module.exports = function (simulation, db) {
 
     simulation.registerListener(instanceId, res, function () {
       sse.initStream(req, res, function(){
-        simulation.unregisterListener(instanceId, res);
+        simulation.unregisterListener(instanceId, res, function(){});
       });
     });
   };

@@ -54,9 +54,14 @@ function initApi(opts, cb){
   opts = opts || {};
   opts.port = opts.port || process.env.PORT || 8002;
   opts.basePath = opts.basePath || '/api/v1';
-  opts.dbProvider = opts.dbProvider || require('SCXMLD-simple-database-provider');
-  opts.simulationProvider = opts.simulationProvider || require('SCXMLD-simple-simulation-provider');
+  opts.dbProvider = opts.dbProvider || 'SCXMLD-simple-database-provider';
+  opts.simulationProvider = opts.simulationProvider || 'SCXMLD-simple-simulation-provider';
   opts.middlewares = opts.middlewares || [];
+
+  console.log('starting server with DB_PROVIDER', opts.dbProvider, 'SIMULATION_PROVIDER', opts.simulationProvider);
+
+  var dbProviderModule = require(opts.dbProvider)
+  var simulationProviderModule = require(opts.simulationProvider);
 
   process.env.SEND_URL = process.env.SEND_URL || ('http://localhost:' + opts.port + opts.basePath + '/');
 
@@ -73,7 +78,7 @@ function initApi(opts, cb){
     next();
   });
 
-  var db = opts.dbProvider();
+  var db = dbProviderModule();
 
   db.init(function (err) {
     if(err) return cb(err);
@@ -81,7 +86,7 @@ function initApi(opts, cb){
     console.log('Db initialized');
 
     // Initialize the api
-    var simulation = opts.simulationProvider(db);
+    var simulation = simulationProviderModule(db);
 
     var api = smaasApi(simulation, db);
 
@@ -153,10 +158,10 @@ function initApi(opts, cb){
 if(require.main === module) {
   var opts = {};
   if(process.env.SIMULATION_PROVIDER){
-    opts.simulationProvider = require(process.env.SIMULATION_PROVIDER);
+    opts.simulationProvider = process.env.SIMULATION_PROVIDER;
   }
   if(process.env.DB_PROVIDER){
-    opts.dbProvider = require(process.env.DB_PROVIDER);
+    opts.dbProvider = process.env.DB_PROVIDER;
   }
   initExpress(opts, function (err, opts) {
     console.log('Starting server on port:', opts.port);
