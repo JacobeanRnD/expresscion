@@ -16,7 +16,7 @@
   },
   "scripts": {
     "postinstall": "node node_modules/bower/bin/bower --allow-root install",
-    "test": "cd SCXMLD-tests && npm install && cd .. && node node_modules/istanbul/lib/cli.js cover node_modules/jasmine/bin/jasmine.js",
+    "test": "cd SCXMLD-tests && npm install && cd .. && ./run_tests.sh",
     "start": "node index.js"
   },
   "engines": {
