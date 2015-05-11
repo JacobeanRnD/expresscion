@@ -26,7 +26,7 @@
     "scxmld": "index.js"
   },
   "dependencies": {
-    "SCXMLD-simple-simulation-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-simulation-provider#df8398ebb3aa5afd43e16efcc134d1ffa0d184eb",
+    "SCXMLD-simple-simulation-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-simulation-provider#167501e005dec7c7baeff125c5a6f0656051a6fd",
     "SCXMLD-simple-database-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-database-provider#140718459a4350d2603cbafca63a72d0bbf5bb21",
     "async": "^0.9.0",
     "bower": "~1.4.1",

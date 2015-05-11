@@ -10,7 +10,7 @@ before_install:
 - npm i -g jasmine@2.2.0
 - npm i -g istanbul
 - npm install s3rver -g
-- npm install git://github.com/JacobeanRnD/SCXMLD-simple-simulation-provider#df8398ebb3aa5afd43e16efcc134d1ffa0d184eb
+- npm install git://github.com/JacobeanRnD/SCXMLD-simple-simulation-provider#167501e005dec7c7baeff125c5a6f0656051a6fd
 - npm install git://github.com/JacobeanRnD/SCXMLD-simple-database-provider#90dea42139e25611be103597626c8fcd9496ed4a
 - npm install git://github.com/JacobeanRnD/SCXMLD-postgres-database-provider#33d7daa701d03617ca25a30e4c17a2b0f1350ad2
 - mkdir s3dir
