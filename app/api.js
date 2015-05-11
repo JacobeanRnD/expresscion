@@ -424,6 +424,9 @@ module.exports = function (simulation, db) {
 
   function deleteInstance (chartName, instanceId, done) {
     simulation.unregisterAllListeners(instanceId, function () {
+      //Delete event queue for the specific instance
+      eventQueue[instanceId] = [];
+      
       simulation.deleteInstance(instanceId, function (err) {
         if(err) return done(err);
 
