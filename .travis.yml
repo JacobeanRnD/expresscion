@@ -12,8 +12,8 @@ before_install:
 - npm install s3rver -g
 - npm install git://github.com/JacobeanRnD/SCXMLD-simple-simulation-provider#8d9f6cdd5ccf8d9af5e927b2b6313397032d4384
 - npm install git://github.com/JacobeanRnD/SCXMLD-simple-database-provider#90dea42139e25611be103597626c8fcd9496ed4a
-- npm install git://github.com/JacobeanRnD/SCXMLD-simple-stateless-simulation-provider.git#9cd9a3cbdacbdb2de11364479339f6d4efe179c8
-- npm install git://github.com/JacobeanRnD/SCXMLD-postgres-database-provider.git#33d7daa701d03617ca25a30e4c17a2b0f1350ad2
+- npm install git://github.com/JacobeanRnD/SCXMLD-simple-stateless-simulation-provider#9cd9a3cbdacbdb2de11364479339f6d4efe179c8
+- npm install git://github.com/JacobeanRnD/SCXMLD-postgres-database-provider#33d7daa701d03617ca25a30e4c17a2b0f1350ad2
 - mkdir s3dir
 - s3rver -d s3dir/ -h localhost -p 4568 & sleep 3
 - curl -XPUT http://localhost:4568/scxmldtests
