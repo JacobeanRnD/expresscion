@@ -2,7 +2,7 @@
 # run_tests.sh
 
 DB_PROVIDERS="SCXMLD-simple-database-provider SCXMLD-postgres-database-provider"
-SIMULATION_PROVIDERS="SCXMLD-simple-simulation-provider SCXMLD-simple-stateless-simulation-provider"
+SIMULATION_PROVIDERS="SCXMLD-simple-simulation-provider"
 RESULT_DESC=""
 EXIT_STATUS=0
 
