@@ -13,12 +13,13 @@ exports.initStream = function(req, res, closeCb){
   res.write('data: \n\n');
 
   var handle = setInterval(function() {
-    res.write('\n');
+    if(!res.finished)
+      res.write('\n');
   }, 30 * 1000);
 
   //clean up
-  res.on('finish', function() {
-    closeCb();
+  res.on('close', function() {
     clearInterval(handle);
+    closeCb();
   });
 };
