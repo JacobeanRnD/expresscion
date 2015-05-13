@@ -1,8 +1,8 @@
 #!/bin/bash
 # run_tests.sh
 
-DB_PROVIDERS="SCXMLD-simple-database-provider SCXMLD-postgres-database-provider"
-SIMULATION_PROVIDERS="SCXMLD-simple-simulation-provider"
+source ./provider_list.sh
+
 RESULT_DESC=""
 EXIT_STATUS=0
 
