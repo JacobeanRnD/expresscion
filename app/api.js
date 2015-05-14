@@ -195,7 +195,7 @@ module.exports = function (simulation, db) {
   api.createNamedInstance = function(req, res){
     var chartName = req.params.StateChartName;
 
-    db.getStatechart(chartName, function (err, scxml) {
+    db.getStatechart(chartName, function (err) {
       if (!util.IsOk(err, res)) return;
 
       db.getInstance(chartName, chartName + '/' + req.params.InstanceId, function (err, exists) {
@@ -424,6 +424,9 @@ module.exports = function (simulation, db) {
 
   function deleteInstance (chartName, instanceId, done) {
     simulation.unregisterAllListeners(instanceId, function () {
+      //Delete event queue for the specific instance
+      eventQueue[instanceId] = [];
+      
       simulation.deleteInstance(instanceId, function (err) {
         if(err) return done(err);
 

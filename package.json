@@ -16,7 +16,7 @@
   },
   "scripts": {
     "postinstall": "node node_modules/bower/bin/bower --allow-root install",
-    "test": "cd SCXMLD-tests && npm install && cd .. && node node_modules/istanbul/lib/cli.js cover node_modules/jasmine/bin/jasmine.js",
+    "test": "cd SCXMLD-tests && npm install && cd .. && ./run_tests.sh",
     "start": "node index.js"
   },
   "engines": {
@@ -26,8 +26,8 @@
     "scxmld": "index.js"
   },
   "dependencies": {
-    "SCXMLD-simple-simulation-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-simulation-provider#8d9f6cdd5ccf8d9af5e927b2b6313397032d4384",
-    "SCXMLD-simple-database-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-database-provider#140718459a4350d2603cbafca63a72d0bbf5bb21",
+    "SCXMLD-simple-simulation-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-simulation-provider#b4271d8c40d1748d79de451c316ee31768e4346b",
+    "SCXMLD-simple-database-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-database-provider#38302f519e4bb842fc48573f9ebbd86458f08ce6",
     "async": "^0.9.0",
     "bower": "~1.4.1",
     "cors": "^2.5.3",

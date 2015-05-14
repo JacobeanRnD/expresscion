@@ -54,6 +54,14 @@ function initApi(opts, cb){
   opts = opts || {};
   opts.port = opts.port || process.env.PORT || 8002;
   opts.basePath = opts.basePath || '/api/v1';
+
+  if(process.env.SIMULATION_PROVIDER){
+    opts.simulationProvider = require(process.env.SIMULATION_PROVIDER);
+  }
+  if(process.env.DB_PROVIDER){
+    opts.dbProvider = require(process.env.DB_PROVIDER);
+  }
+
   opts.dbProvider = opts.dbProvider || require('SCXMLD-simple-database-provider');
   opts.simulationProvider = opts.simulationProvider || require('SCXMLD-simple-simulation-provider');
   opts.middlewares = opts.middlewares || [];
@@ -152,12 +160,6 @@ function initApi(opts, cb){
 
 if(require.main === module) {
   var opts = {};
-  if(process.env.SIMULATION_PROVIDER){
-    opts.simulationProvider = require(process.env.SIMULATION_PROVIDER);
-  }
-  if(process.env.DB_PROVIDER){
-    opts.dbProvider = require(process.env.DB_PROVIDER);
-  }
   initExpress(opts, function (err, opts) {
     console.log('Starting server on port:', opts.port);
     if(err) throw err;

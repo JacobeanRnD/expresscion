@@ -4,12 +4,14 @@ var util = {};
 
 util.IsOk = function (error, response) {
   if (error) {
-    response.status(error.statusCode || 500).send({
-      name: 'error.on.action',
-      data: {
-        message: error.message || error
-      }
-    });
+    if(!response.headersSent) {
+      response.status(error.statusCode || 500).send({
+        name: 'error.on.action',
+        data: {
+          message: error.message || error
+        }
+      });
+    }
 
     return false;
   }
