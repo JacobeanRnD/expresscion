@@ -1,6 +1,6 @@
 ## SCXMLD
 
-![Tests](https://magnum.travis-ci.com/JacobeanRnD/SCXMLD.svg?token=tW6nVvCmQPPuKMxQTSmg&branch=master)
+![Tests](https://travis-ci.org/JacobeanRnD/SCXMLD.svg?branch=master)
 
 SCXMLD is an open SCXML orchestration server. SCXMLD provides a server
 implementation of the [State Machines as a Service (SMaaS)](https://github.com/JacobeanRnD/SMaaS-swagger-spec) REST API.
