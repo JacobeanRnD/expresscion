@@ -78,6 +78,8 @@ module.exports = function (simulation, db) {
     });
 
     extract.on('error', function(err) {
+      isFailed = true;
+
       if(!res.finished) res.status(400).send({ name: 'error.bad.stream', data: err.toString() });
 
       return;
