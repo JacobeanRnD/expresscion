@@ -417,7 +417,8 @@ module.exports = function (simulation, db) {
       res.setHeader('X-Configuration',JSON.stringify(snapshot[0]));
       res.send({ name: 'success.event.sent', data: { snapshot: snapshot[0] }});
     }else{
-      res.send(customData);
+      var statusCode = customData.error ? 500 : 200;
+      res.send(statusCode, customData);
     }
     delete pendingResponses[eventUuid];
   }
