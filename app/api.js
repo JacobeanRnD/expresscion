@@ -35,6 +35,7 @@ module.exports = function (simulation, db) {
     var extract = tar.extract();
 
     extract.on('entry', function(header, stream, callback) {
+
       if(header.name === 'index.scxml') {
         //Read index.scxml file
         stream.on('data', function (c) {
@@ -74,6 +75,14 @@ module.exports = function (simulation, db) {
 
         if (!util.IsOk(err, res)) return;
       });
+    });
+
+    extract.on('error', function(err) {
+      isFailed = true;
+
+      if(!res.finished) res.status(400).send({ name: 'error.bad.stream', data: err.toString() });
+
+      return;
     });
 
     extract.on('finish', function() {
