@@ -47,7 +47,13 @@ function initExpress (opts, cb) {
 
   opts.app = app;
 
-  initApi(opts, cb);
+  initApi(opts, function (err, opts) {
+    opts.app.use(function(req, res) {
+      res.status(404).send('Can\'t find ' + req.path);
+    });
+
+    cb(err, opts);
+  });
 }
 
 function initApi(opts, cb){
@@ -144,10 +150,6 @@ function initApi(opts, cb){
             }
           }
         });
-      });
-
-      opts.app.use(function(req, res) {
-        res.status(404).send('Can\'t find ' + req.path);
       });
 
       cb(null, opts);
