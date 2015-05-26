@@ -39,12 +39,8 @@ util.dbIsOkAndNotEmpty = function (error, response, dbResult) {
   }
 };
 
-util.getShortInstanceId = function (instanceId) {
-  return instanceId.split('/')[1];
-};
-
 util.getInstanceId = function (req) {
-  return req.params.StateChartName + '/' + req.params.InstanceId;
+  return req.params.InstanceId;
 };
 
 module.exports = util;

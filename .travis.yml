@@ -9,17 +9,8 @@ before_install:
 - jshint . 
 - npm i -g jasmine@2.2.0
 - npm i -g istanbul
-- npm install s3rver -g
-- npm install git://github.com/JacobeanRnD/SCXMLD-postgres-database-provider#33d7daa701d03617ca25a30e4c17a2b0f1350ad2
-- mkdir s3dir
-- s3rver -d s3dir/ -h localhost -p 4568 -s & sleep 3
-- curl -XPUT http://localhost:4568/scxmldtests
+- npm install git://github.com/JacobeanRnD/SCXMLD-postgres-database-provider#5d2efc2b9229113f3252dbf559457901946be6bf
 - export WEBSITE_URL='http://scxmldev.io'
-- export CEPH_PORT='4568'
-- export CEPH_BUCKET='scxmldtests'
-- export CEPH_HOST='localhost'
-- export CEPH_KEY='test'
-- export CEPH_SECRET='test'
 - export POSTGRES_URL='postgres://postgres@localhost:5432/scxmld'
 before_script:
 - psql -c 'create database scxmld;' -U postgres
