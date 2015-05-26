@@ -62,8 +62,8 @@ function initApi(opts, cb){
     opts.dbProvider = require(process.env.DB_PROVIDER);
   }
 
-  opts.dbProvider = opts.dbProvider || require('SCXMLD-simple-database-provider');
-  opts.simulationProvider = opts.simulationProvider || require('SCXMLD-simple-simulation-provider');
+  opts.dbProvider = opts.dbProvider || require('SCXMLD-postgres-database-provider');
+  opts.simulationProvider = opts.simulationProvider || require('SCXMLD-simple-stateless-simulation-provider');
   opts.middlewares = opts.middlewares || [];
 
   process.env.SEND_URL = process.env.SEND_URL || ('http://localhost:' + opts.port + opts.basePath + '/');
