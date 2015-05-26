@@ -11,7 +11,7 @@ module.exports = function (simulation, db) {
   function createInstance(instanceId, done){
     simulation.createInstance(instanceId, function (err, instanceId) {
       debug('simulation.createInstance response', instanceId, null);
-      db.saveInstance(instanceId, null, function () {
+      db.saveInstance(instanceId, null, function (err) {
         done(err, instanceId);
       });
     });
