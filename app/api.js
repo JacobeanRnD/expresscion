@@ -1,56 +1,43 @@
 'use strict';
 
-var async = require('async');
-var tar = require('tar-stream');
 var uuid = require('uuid');
-var validate = require('./validate-scxml').validateCreateScxmlRequest;
 var sse = require('./sse');
 var util = require('./util');
 var debug = require('debug')('scxmld');
 
-var statechartDefinitionSubscriptions = {};
-
-module.exports = function (simulation, db, model) {
+module.exports = function (simulation, db) {
   var api = {};
 
-  function createInstance(chartName, instanceId, done){
+  function createInstance(instanceId, done){
     simulation.createInstance(instanceId, function (err, instanceId) {
-      debug('simulation.createInstance response',chartName, instanceId, null);
-      db.saveInstance(chartName, instanceId, null, function () {
+      debug('simulation.createInstance response', instanceId, null);
+      db.saveInstance(instanceId, null, function () {
         done(err, instanceId);
       });
     });
   }
 
-  api.createInstance = function(req, res){
+  api.createInstance = function(req, res) {
     api.createNamedInstance(req, res);
   };
 
-  api.createNamedInstance = function(req, res){
-    var chartName = req.params.StateChartName;
+  api.createNamedInstance = function(req, res) {
+    db.getInstance(req.params.InstanceId, function (err, exists) {
+      if(exists) return res.status(409).send({ name: 'error.creating.instance', data: { message: 'InstanceId is already associated with an instance' }});
 
-    db.getStatechart(chartName, function (err) {
-      if (!util.IsOk(err, res)) return;
+      createInstance(req.params.InstanceId, function (err, instanceId) {
+        if (!util.IsOk(err, res)) return;
+        if(err && err.statusCode === 404) return res.status(404).send({ name: 'error.getting.statechart', data: { message: 'Statechart definition not found' }});
 
-      db.getInstance(chartName, chartName + '/' + req.params.InstanceId, function (err, exists) {
-        if(exists) return res.status(409).send({ name: 'error.creating.instance', data: { message: 'InstanceId is already associated with an instance' }});
+        res.setHeader('Location', instanceId);
 
-        createInstance(chartName, req.params.InstanceId, function (err, instanceId) {
-          if (!util.IsOk(err, res)) return;
-          if(err && err.statusCode === 404) return res.status(404).send({ name: 'error.getting.statechart', data: { message: 'Statechart definition not found' }});
-
-          res.setHeader('Location', instanceId);
-
-          res.status(201).send({ name: 'success.create.instance', data: { id: util.getShortInstanceId(instanceId) }});
-        });
+        res.status(201).send({ name: 'success.create.instance', data: { id: instanceId }});
       });
     });
   };
 
   api.getInstances = function(req, res) {
-    var chartName = req.params.StateChartName;
-
-    db.getInstances(chartName, function (err, instances) {
+    db.getInstances(function (err, instances) {
       if (!util.IsOk(err, res)) return;
 
       instances = instances.map(function (id) {
@@ -62,21 +49,20 @@ module.exports = function (simulation, db, model) {
   };
 
   api.getInstance = function(req, res){
-    var chartName = req.params.StateChartName;
     var instanceId = util.getInstanceId(req);
 
-    db.getInstance(chartName, instanceId, function (err, snapshot) {
+    db.getInstance(instanceId, function (err, snapshot) {
       if (!util.IsOk(err, res)) return;
 
       res.send({ name: 'success.get.instance', data: { instance: { snapshot: snapshot }}});
     });
   };
 
-  function sendEvent (chartName, instanceId, event, sendOptions, eventUuid, done) {
-    simulation.sendEvent(instanceId, event, sendOptions, eventUuid, function (err, conf, wait) {
+  function sendEvent (instanceId, event, sendOptions, eventUuid, done) {
+    simulation.sendEvent(instanceId, event, sendOptions, eventUuid, function (err, conf) {
       if(err) return done(err);
 
-      db.saveInstance(chartName, instanceId, conf, function () {
+      db.saveInstance(instanceId, conf, function () {
         if(err) return done(err);
 
         db.saveEvent(instanceId, {
@@ -94,7 +80,6 @@ module.exports = function (simulation, db, model) {
   var isProcessing = false;
 
   api.sendEvent = function(req, res) {
-    var chartName = req.params.StateChartName;
     var instanceId = util.getInstanceId(req),
       event;
 
@@ -128,7 +113,7 @@ module.exports = function (simulation, db, model) {
       var event = tuple[0],
           res = tuple[1];
 
-      db.getInstance(chartName, instanceId, function (err) {
+      db.getInstance(instanceId, function (err) {
         if(err) {
           isProcessing = false;
           return res.status(err.statusCode || 500).send(err);
@@ -151,7 +136,7 @@ module.exports = function (simulation, db, model) {
 
         pendingResponses[eventUuid] = res;   //save the response
 
-        sendEvent(chartName, instanceId, event, sendOptions, eventUuid, function (err, nextConfiguration) {
+        sendEvent(instanceId, event, sendOptions, eventUuid, function (err) {
           isProcessing = false;
 
           if (!util.IsOk(err, res)) return;
@@ -178,7 +163,7 @@ module.exports = function (simulation, db, model) {
     delete pendingResponses[eventUuid];
   }
 
-  function deleteInstance (chartName, instanceId, done) {
+  function deleteInstance (instanceId, done) {
     simulation.unregisterAllListeners(instanceId, function () {
       //Delete event queue for the specific instance
       eventQueue[instanceId] = [];
@@ -186,19 +171,18 @@ module.exports = function (simulation, db, model) {
       simulation.deleteInstance(instanceId, function (err) {
         if(err) return done(err);
 
-        db.deleteInstance(chartName, instanceId, done);
+        db.deleteInstance(instanceId, done);
       });
     });
   }
 
   api.deleteInstance = function(req, res){
-    var chartName = req.params.StateChartName,
-      instanceId = util.getInstanceId(req);
+    var instanceId = util.getInstanceId(req);
 
     simulation.unregisterListener(instanceId, res, function(err){
       if (!util.IsOk(err, res)) return;
 
-      deleteInstance(chartName, instanceId, function (err) {
+      deleteInstance(instanceId, function (err) {
         if (!util.IsOk(err, res)) return;
 
         res.send({ name: 'success.deleting.instance', data: { message: 'Instance deleted successfully.' }});
@@ -217,10 +201,9 @@ module.exports = function (simulation, db, model) {
   };
 
   api.instanceViz = function (req, res) {
-    var chartName = req.params.StateChartName,
-      instanceId = util.getInstanceId(req);
+    var instanceId = util.getInstanceId(req);
 
-    db.getInstance(chartName, instanceId, function (err, exists) {
+    db.getInstance(instanceId, function (err, exists) {
       if(typeof exists === 'undefined') return res.sendStatus(404);
 
       res.render('viz.html', {
@@ -230,14 +213,8 @@ module.exports = function (simulation, db, model) {
   };
 
   api.statechartViz = function (req, res) {
-    var chartName = req.params.StateChartName;
-
-    db.getStatechart(chartName, function (err, scxml) {
-      if(!scxml) return res.sendStatus(404);
-
-      res.render('viz.html', {
-        type: 'statechart'
-      });
+    res.render('viz.html', {
+      type: 'statechart'
     });
   };
 
@@ -250,16 +227,6 @@ module.exports = function (simulation, db, model) {
       res.send({ name: 'success.getting.logs', data: { events: events }});
     });
   };
-
-  function broadcastDefinitionChange(chartName){
-    var statechartDefinitionSubscription = statechartDefinitionSubscriptions[chartName];
-    if(statechartDefinitionSubscription) {
-      statechartDefinitionSubscription.forEach(function(response) {
-        response.write('event: onChange\n');
-        response.write('data:\n\n');
-      });
-    }
-  }
 
   return api;
 };

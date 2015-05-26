@@ -2,10 +2,8 @@
 'use strict';
 
 var smaasApi = require('./app/api'),
-  _ = require('underscore'),
-  cors = require('cors');
-
-var parse = require('./model');
+  cors = require('cors'),
+  getModel = require('./app/getModel');
 
 //CLI: scxmld statechartName [instanceId]
 //scxmld.initApi({pathToModel : 'index.scxml', instanceId : null || instanceId})
@@ -23,9 +21,6 @@ function initExpress (opts, cb) {
   
   // buffer the body
   app.use(function(req, res, next) {
-    // Don't buffer for tarballs
-    if(req.is('application/x-tar')) return next();
-
     req.body = '';
     req.on('data', function(data) {
       return req.body += data;
@@ -58,7 +53,7 @@ function initExpress (opts, cb) {
 function initApi(opts, cb){
   opts = opts || {};
   opts.port = opts.port || process.env.PORT || 8002;
-  opts.basePath = opts.basePath || '/api/v1';
+  opts.basePath = opts.basePath || '/api/v3';
 
   if(process.env.SIMULATION_PROVIDER){
     opts.simulationProvider = require(process.env.SIMULATION_PROVIDER);
@@ -93,7 +88,7 @@ function initApi(opts, cb){
 
     console.log('Db initialized');
 
-    parse(opts.pathToModel,function(err, model){
+    getModel(opts.pathToModel, function(err, model) {
       if(err) return cb(err);
 
       console.log('Model initialized');
@@ -101,7 +96,7 @@ function initApi(opts, cb){
       // Initialize the api
       var simulation = opts.simulationProvider(db, model);
 
-      var api = smaasApi(simulation, db, model);
+      var api = smaasApi(simulation, db);
 
       var smaasJSON = require('smaas-swagger-spec');
 
@@ -125,6 +120,8 @@ function initApi(opts, cb){
 
         Object.keys(endpoint).forEach(function(methodName){
           var method = endpoint[methodName];
+
+          console.log(methodName, actualPath);
 
           var handler = api[method.operationId] || methodNotImplementedMiddleware;
           switch(methodName) {
@@ -150,19 +147,21 @@ function initApi(opts, cb){
           }
         });
       });
-    });
 
-    opts.app.use(function(req, res) {
-      res.status(404).send('Can\'t find ' + req.path);
-    });
+      opts.app.use(function(req, res) {
+        res.status(404).send('Can\'t find ' + req.path);
+      });
 
-    cb(null, opts);
+      cb(null, opts);
+    });
   });
 }
 
 
 if(require.main === module) {
   var opts = {};
+  opts.pathToModel = process.argv[2] || 'index.scxml';
+
   initExpress(opts, function (err, opts) {
     console.log('Starting server on port:', opts.port);
     if(err) throw err;
