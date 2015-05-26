@@ -121,8 +121,6 @@ function initApi(opts, cb){
         Object.keys(endpoint).forEach(function(methodName){
           var method = endpoint[methodName];
 
-          console.log(methodName, actualPath);
-
           var handler = api[method.operationId] || methodNotImplementedMiddleware;
           switch(methodName) {
             case 'get': {
@@ -160,7 +158,7 @@ function initApi(opts, cb){
 
 if(require.main === module) {
   var opts = {};
-  opts.pathToModel = process.argv[2] || 'index.scxml';
+  opts.pathToModel = process.argv[2] || 'main.scxml';
 
   initExpress(opts, function (err, opts) {
     console.log('Starting server on port:', opts.port);
