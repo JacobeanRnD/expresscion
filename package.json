@@ -26,8 +26,8 @@
     "scxmld": "index.js"
   },
   "dependencies": {
-    "SCXMLD-postgres-database-provider": "git://github.com/JacobeanRnD/SCXMLD-postgres-database-provider#5d2efc2b9229113f3252dbf559457901946be6bf",
-    "SCXMLD-simple-stateless-simulation-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-stateless-simulation-provider#608da65392f36450514e1f875e61b2fd3ad9bacd",
+    "SCXMLD-postgres-database-provider": "git://github.com/JacobeanRnD/SCXMLD-postgres-database-provider#5f33235ffaf2656590072bf5be9a5877d6f8ef29",
+    "SCXMLD-simple-stateless-simulation-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-stateless-simulation-provider#ce5f04e1db0da9f76a9ee9ce31df17bece15a076",
     "async": "^0.9.0",
     "bower": "~1.4.1",
     "cors": "^2.5.3",
@@ -38,7 +38,7 @@
     "morgan": "^1.5.2",
     "redis": "^0.12.1",
     "scxml": "git://github.com/jbeard4/SCION.git#dd6465f58882e85ee2a599de9513662e453be21f",
-    "smaas-swagger-spec": "git://github.com/JacobeanRnD/SMaaS-swagger-spec.git#38e043a03a01d04781ccbcfba9e78a348269d102",
+    "smaas-swagger-spec": "git://github.com/JacobeanRnD/SMaaS-swagger-spec.git#4d8bd5b3ff0dac311ca7473ddf2120955eb2593f",
     "underscore": "^1.8.3",
     "uuid": "^2.0.1"
   },

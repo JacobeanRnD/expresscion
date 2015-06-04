@@ -5,24 +5,28 @@ var sse = require('./sse');
 var util = require('./util');
 var debug = require('debug')('scxmld');
 
-module.exports = function (simulation, db) {
+module.exports = function (simulation, db, scxmlString, modelName) {
   var api = {};
 
   function createInstance(instanceId, done){
     simulation.createInstance(instanceId, function (err, instanceId) {
       debug('simulation.createInstance response', instanceId, null);
-      db.saveInstance(instanceId, null, function (err) {
+      db.saveInstance(modelName, instanceId, null, function (err) {
         done(err, instanceId);
       });
     });
   }
+
+  api.getStatechartDefinition = function(req, res){
+    res.type('application/scxml+xml').status(200).send(scxmlString);
+  };
 
   api.createInstance = function(req, res) {
     api.createNamedInstance(req, res);
   };
 
   api.createNamedInstance = function(req, res) {
-    db.getInstance(req.params.InstanceId, function (err, exists) {
+    db.getInstance(modelName, req.params.InstanceId, function (err, exists) {
       if(exists) return res.status(409).send({ name: 'error.creating.instance', data: { message: 'InstanceId is already associated with an instance' }});
 
       createInstance(req.params.InstanceId, function (err, instanceId) {
@@ -37,7 +41,7 @@ module.exports = function (simulation, db) {
   };
 
   api.getInstances = function(req, res) {
-    db.getInstances(function (err, instances) {
+    db.getInstances(modelName, function (err, instances) {
       if (!util.IsOk(err, res)) return;
 
       instances = instances.map(function (id) {
@@ -51,7 +55,7 @@ module.exports = function (simulation, db) {
   api.getInstance = function(req, res){
     var instanceId = util.getInstanceId(req);
 
-    db.getInstance(instanceId, function (err, snapshot) {
+    db.getInstance(modelName, instanceId, function (err, snapshot) {
       if (!util.IsOk(err, res)) return;
 
       res.send({ name: 'success.get.instance', data: { instance: { snapshot: snapshot }}});
@@ -62,7 +66,7 @@ module.exports = function (simulation, db) {
     simulation.sendEvent(instanceId, event, sendOptions, eventUuid, function (err, conf) {
       if(err) return done(err);
 
-      db.saveInstance(instanceId, conf, function () {
+      db.saveInstance(modelName, instanceId, conf, function () {
         if(err) return done(err);
 
         db.saveEvent(instanceId, {
@@ -113,7 +117,7 @@ module.exports = function (simulation, db) {
       var event = tuple[0],
           res = tuple[1];
 
-      db.getInstance(instanceId, function (err) {
+      db.getInstance(modelName, instanceId, function (err) {
         if(err) {
           isProcessing = false;
           return res.status(err.statusCode || 500).send(err);
@@ -171,7 +175,7 @@ module.exports = function (simulation, db) {
       simulation.deleteInstance(instanceId, function (err) {
         if(err) return done(err);
 
-        db.deleteInstance(instanceId, done);
+        db.deleteInstance(modelName, instanceId, done);
       });
     });
   }
@@ -203,7 +207,7 @@ module.exports = function (simulation, db) {
   api.instanceViz = function (req, res) {
     var instanceId = util.getInstanceId(req);
 
-    db.getInstance(instanceId, function (err, exists) {
+    db.getInstance(modelName, instanceId, function (err, exists) {
       if(typeof exists === 'undefined') return res.sendStatus(404);
 
       res.render('viz.html', {
@@ -221,7 +225,7 @@ module.exports = function (simulation, db) {
   api.getEventLog = function (req, res) {
     var instanceId = util.getInstanceId(req);
 
-    db.getEvents(instanceId, function (err, events) {
+    db.getEvents(modelName, instanceId, function (err, events) {
       if (!util.IsOk(err, res)) return;
 
       res.send({ name: 'success.getting.logs', data: { events: events }});

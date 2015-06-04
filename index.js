@@ -3,7 +3,9 @@
 
 var smaasApi = require('./app/api'),
   cors = require('cors'),
-  getModel = require('./app/getModel');
+  scxml = require('scxml'),
+  fs = require('fs'),
+	validate = require('./app/validate-scxml').validateCreateScxmlRequest;
 
 //CLI: scxmld statechartName [instanceId]
 //scxmld.initApi({pathToModel : 'index.scxml', instanceId : null || instanceId})
@@ -81,89 +83,96 @@ function initApi(opts, cb){
     next();
   });
 
-  var db = opts.dbProvider();
+  fs.readFile(opts.pathToModel, 'utf8', function (err, scxmlString) {
+    if(err) return done(err);
 
-  db.init(function (err) {
-    if(err) return cb(err);
+    validate(scxmlString, function(scxmlSchemaErrors) {   
+      if(scxmlSchemaErrors) return done(scxmlSchemaErrors);
 
-    console.log('Db initialized');
+      scxml.pathToModel(opts.pathToModel, function(err, model){
+        console.log('Model initialized');
 
-    getModel(opts.pathToModel, function(err, model) {
-      if(err) return cb(err);
+        var modelName = process.env.APP_NAME || model.meta.name;
 
-      console.log('Model initialized');
+        var db = opts.dbProvider({modelName :  modelName});
 
-      // Initialize the api
-      var simulation = opts.simulationProvider(db, model);
+        db.init(function (err) {
+          if(err) return cb(err);
 
-      var api = smaasApi(simulation, db);
+          console.log('Db initialized');
 
-      var smaasJSON = require('smaas-swagger-spec');
+          // Initialize the api
+          var simulation = opts.simulationProvider(db, model, modelName );
 
-      smaasJSON.host = process.env.SMAAS_HOST_URL || ('localhost' + ':' + opts.port);
-      smaasJSON.basePath = opts.basePath;
+          var api = smaasApi( simulation, db, scxmlString, modelName );
 
-      opts.app.get('/smaas.json', function (req, res) {
-        res.status(200).send(smaasJSON);
-      });
+          var smaasJSON = require('smaas-swagger-spec');
 
-      opts.app.get(smaasJSON.basePath + '/:InstanceId/_viz', api.instanceViz);
-      opts.app.get(smaasJSON.basePath + '/_viz', api.statechartViz);
+          smaasJSON.host = process.env.SMAAS_HOST_URL || ('localhost' + ':' + opts.port);
+          smaasJSON.basePath = opts.basePath;
 
-      function methodNotImplementedMiddleware(req, res){
-        return res.send(501, { message: 'Not implemented' });
-      }
+          opts.app.get('/smaas.json', function (req, res) {
+            res.status(200).send(smaasJSON);
+          });
 
-      Object.keys(smaasJSON.paths).forEach(function(endpointPath){
-        var endpoint = smaasJSON.paths[endpointPath];
-        var actualPath = smaasJSON.basePath + endpointPath.replace(/{/g, ':').replace(/}/g, '');
+          opts.app.get(smaasJSON.basePath + '/:InstanceId/_viz', api.instanceViz);
+          opts.app.get(smaasJSON.basePath + '/_viz', api.statechartViz);
 
-        Object.keys(endpoint).forEach(function(methodName){
-          var method = endpoint[methodName];
-
-          var handler = api[method.operationId] || methodNotImplementedMiddleware;
-          switch(methodName) {
-            case 'get': {
-              opts.app.get(actualPath, opts.middlewares, handler);
-              break;
-            }
-            case 'post': {
-              opts.app.post(actualPath, opts.middlewares, handler);
-              break;
-            }
-            case 'put': {
-              opts.app.put(actualPath, opts.middlewares, handler);
-              break;
-            }
-            case 'delete': {
-              opts.app.delete(actualPath, opts.middlewares, handler);
-              break;
-            }
-            default:{
-              console.log('Unsupported method name:', methodName);
-            }
+          function methodNotImplementedMiddleware(req, res){
+            return res.send(501, { message: 'Not implemented' });
           }
+
+          Object.keys(smaasJSON.paths).forEach(function(endpointPath){
+            var endpoint = smaasJSON.paths[endpointPath];
+            var actualPath = smaasJSON.basePath + endpointPath.replace(/{/g, ':').replace(/}/g, '');
+
+            Object.keys(endpoint).forEach(function(methodName){
+              var method = endpoint[methodName];
+
+              var handler = api[method.operationId] || methodNotImplementedMiddleware;
+              switch(methodName) {
+                case 'get': {
+                  opts.app.get(actualPath, opts.middlewares, handler);
+                  break;
+                }
+                case 'post': {
+                  opts.app.post(actualPath, opts.middlewares, handler);
+                  break;
+                }
+                case 'put': {
+                  opts.app.put(actualPath, opts.middlewares, handler);
+                  break;
+                }
+                case 'delete': {
+                  opts.app.delete(actualPath, opts.middlewares, handler);
+                  break;
+                }
+                default:{
+                  console.log('Unsupported method name:', methodName);
+                }
+              }
+            });
+          });
+
+          opts.app.use(function(req, res) {
+            res.status(404).send('Can\'t find ' + req.path);
+          });
+
+          cb(null, opts);
         });
-      });
-
-      opts.app.use(function(req, res) {
-        res.status(404).send('Can\'t find ' + req.path);
-      });
-
-      cb(null, opts);
+      });    
     });
   });
 }
-
 
 if(require.main === module) {
   var opts = {};
   opts.pathToModel = process.argv[2] || 'main.scxml';
 
   initExpress(opts, function (err, opts) {
-    console.log('Starting server on port:', opts.port);
     if(err) throw err;
 
+    console.log('Starting server on port:', opts.port);
     opts.app.listen(opts.port, function () {
       console.log('Server started');
     });
