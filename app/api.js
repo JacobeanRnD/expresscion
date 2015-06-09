@@ -45,7 +45,7 @@ module.exports = function (simulation, db, scxmlString, modelName) {
       if (!util.IsOk(err, res)) return;
 
       instances = instances.map(function (id) {
-        return { id: id.split('/')[1] };
+        return { id: id };
       });
 
       res.send({ name: 'success.get.instances', data: { instances: instances }});
@@ -225,7 +225,7 @@ module.exports = function (simulation, db, scxmlString, modelName) {
   api.getEventLog = function (req, res) {
     var instanceId = util.getInstanceId(req);
 
-    db.getEvents(modelName, instanceId, function (err, events) {
+    db.getEvents(instanceId, function (err, events) {
       if (!util.IsOk(err, res)) return;
 
       res.send({ name: 'success.getting.logs', data: { events: events }});
