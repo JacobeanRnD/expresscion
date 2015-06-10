@@ -84,10 +84,10 @@ function initApi(opts, cb){
   });
 
   fs.readFile(opts.pathToModel, 'utf8', function (err, scxmlString) {
-    if(err) return done(err);
+    if(err) throw err;
 
     validate(scxmlString, function(scxmlSchemaErrors) {   
-      if(scxmlSchemaErrors) return done(scxmlSchemaErrors);
+      if(scxmlSchemaErrors) throw scxmlSchemaErrors;
 
       scxml.pathToModel(opts.pathToModel, function(err, model){
         console.log('Model initialized');
