@@ -17,3 +17,5 @@ before_script:
 - psql -c 'create database scxmld;' -U postgres
 addons:
   postgresql: "9.3"
+services:
+  - redis-server
