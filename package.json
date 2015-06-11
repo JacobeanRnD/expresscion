@@ -1,7 +1,7 @@
 {
   "name": "scxmld",
   "description": "SCXML orchestration server. Implements SMaaS.",
-  "version": "0.0.2a",
+  "version": "0.0.3a",
   "homepage": "https://github.com/JacobeanRnD/SCXMLD",
   "main": "./index.js",
   "license": "Apache-2.0",
@@ -26,8 +26,8 @@
     "scxmld": "index.js"
   },
   "dependencies": {
-    "SCXMLD-simple-database-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-database-provider.git",
-    "SCXMLD-simple-simulation-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-simulation-provider.git",
+    "SCXMLD-simple-database-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-database-provider.git#bb3c616b4d70f286ea44c07c1d42c5746c3277fe",
+    "SCXMLD-simple-simulation-provider": "git://github.com/JacobeanRnD/SCXMLD-simple-simulation-provider.git#671f7e3321fd361149cb1b6c7ff3fa5ca32925f4",
     "async": "^0.9.0",
     "cors": "^2.5.3",
     "ejs": "^2.3.1",
