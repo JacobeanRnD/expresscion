@@ -90,9 +90,10 @@ function initApi(opts, cb){
       if(scxmlSchemaErrors) throw scxmlSchemaErrors;
 
       scxml.pathToModel(opts.pathToModel, function(err, model){
-        console.log('Model initialized');
 
         var modelName = process.env.APP_NAME || model.meta.name;
+
+        console.log('Model initialized', modelName);
 
         var db = opts.dbProvider({modelName :  modelName});
 
