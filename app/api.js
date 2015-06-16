@@ -3,7 +3,19 @@
 var uuid = require('uuid');
 var sse = require('./sse');
 var util = require('./util');
+var redis = require('redis');
 var debug = require('debug')('scxmld');
+
+if (process.env.REDIS_URL) {
+  var rtg = urlModule.parse(process.env.REDIS_URL);
+
+  var redisSubscribe = redis.createClient(rtg.port, rtg.hostname);
+  if(rtg.auth) redisSubscribe.auth(rtg.auth.split(':')[1]);
+
+} else {
+  redisSubscribe = redis.createClient();
+}
+
 
 module.exports = function (simulation, db, scxmlString, modelName) {
   var api = {};
@@ -59,21 +71,24 @@ module.exports = function (simulation, db, scxmlString, modelName) {
   };
 
   function sendEvent (instanceId, event, sendOptions, eventUuid, done) {
-    simulation.sendEvent(instanceId, event, sendOptions, eventUuid, function (err, conf) {
-      if(err) return done(err);
-
-      db.saveInstance(modelName, instanceId, conf, function () {
+    //subscribe
+    redisSubscribe.subscribe('/response/' + eventUuid, function(){
+      simulation.sendEvent(instanceId, event, sendOptions, eventUuid, function (err, conf) {
         if(err) return done(err);
 
-        db.saveEvent(instanceId, {
-          timestamp: new Date(),
-          event: event,
-          snapshot: conf
-        }, function (err) {
-          done(err, conf[0]);
+        db.saveInstance(modelName, instanceId, conf, function () {
+          if(err) return done(err);
+
+          db.saveEvent(instanceId, {
+            timestamp: new Date(),
+            event: event,
+            snapshot: conf
+          }, function (err) {
+            done(err, conf[0]);
+          });
         });
       });
-    }, respond);
+    });
   }
 
   var eventQueue = {};
@@ -149,10 +164,22 @@ module.exports = function (simulation, db, scxmlString, modelName) {
 
   var pendingResponses = {};
 
-  function respond(eventUuid, snapshot, customData){
+  var responseChannelRegExp = /^\/response\/(.*)$/;
+  redisSubscribe.on('message', function respond(channel, dataStr){
+    //console.log('respond channel, dataStr',arguments);
+    var m = channel.match(responseChannelRegExp);
+    if(!m) throw new Error('Unexpected channel '+channel);
+    var eventUuid = m[1];
     var res = pendingResponses[eventUuid];
     if(!res) return;      //this can happen if, for example, 
                           //the server dies before the response has been released
+                          
+    redisSubscribe.unsubscribe('/response/' + eventUuid);
+    var data = JSON.parse(dataStr);
+    var snapshot = data.snapshot, 
+        customData = data.customData;
+
+    //TODO: provide deeper control over response status code
     if(snapshot){
       res.setHeader('X-Configuration',JSON.stringify(snapshot[0]));
       res.send({ name: 'success.event.sent', data: { snapshot: snapshot[0] }});
@@ -161,7 +188,7 @@ module.exports = function (simulation, db, scxmlString, modelName) {
       res.send(statusCode, customData);
     }
     delete pendingResponses[eventUuid];
-  }
+  });
 
   function deleteInstance (instanceId, done) {
     simulation.unregisterAllListeners(instanceId, function () {
