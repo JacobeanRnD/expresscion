@@ -249,7 +249,7 @@ module.exports = function (simulation, db, scxmlString, modelName) {
   api.getEventLog = function (req, res) {
     var instanceId = util.getInstanceId(req);
 
-    db.getEvents(modelName, instanceId, function (err, events) {
+    db.getEvents(instanceId, function (err, events) {
       if (!util.IsOk(err, res)) return;
 
       res.send({ name: 'success.getting.logs', data: { events: events }});
