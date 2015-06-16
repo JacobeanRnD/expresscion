@@ -5,6 +5,7 @@ var sse = require('./sse');
 var util = require('./util');
 var redis = require('redis');
 var debug = require('debug')('scxmld');
+var urlModule = require('url');
 
 if (process.env.REDIS_URL) {
   var rtg = urlModule.parse(process.env.REDIS_URL);
