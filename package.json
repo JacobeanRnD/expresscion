@@ -32,7 +32,7 @@
     "bower": "~1.4.1",
     "cors": "^2.5.3",
     "debug": "^2.1.3",
-    "deus-ex-state-machine-portal": "JacobeanRnD/deus-ex-state-machine-portal#e534bb7560c8d0b76ff62958bd984618b6024c1f",
+    "deus-ex-state-machine-portal": "JacobeanRnD/deus-ex-state-machine-portal#a947aaf979c070e8ba3938e6a940c79716c5c947",
     "ejs": "^2.3.1",
     "express": "^4.12.3",
     "libxmljs": "0.14.1",
