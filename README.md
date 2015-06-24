@@ -4,12 +4,14 @@ Expresscion is an open, cloud-friendly SCXML orchestration server.
 
 Expresscion (formerly SCXMLD) provides Node.js express middleware which
 implements the [State Machines as a Service (SMaaS)](https://github.com/JacobeanRnD/SMaaS-swagger-spec) 
-protocol. 
+REST protocol. 
 
 
 ## Installation
 
 Install PostgreSQL and Redis and set POSTGRES_URL and REDIS_URL in your environment. 
+
+You can clone this [project boilerplate](git@github.com:JacobeanRnD/expresscion-hello-world-node-project.git) and run `npm install`; or follow the instructions. 
 
 Init a new Node.js project with `npm init`.
 
@@ -25,9 +27,9 @@ Add to package.json:
   },
 ```
 
-Then run `npm start`, and visit http://localhost:8002/ in your web browser.
+Then run `npm start`, and visit [http://localhost:8002/](http://localhost:8002/) in your web browser.
 
-Optionally, install SCXML-CLI [SCXML-CLI](https://github.com/JacobeanRnD/SCXML-CLI) 
+Optionally, install command-line tools: https://github.com/JacobeanRnD/SCXML-CLI
 
 ## Deploy to the cloud
 
