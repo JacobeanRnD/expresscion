@@ -45,7 +45,7 @@ function initExpress (opts, cb) {
 
   app.set('views', path.join(__dirname, './views'));
   app.engine('html', require('ejs').renderFile);
-  app.use(express.static(path.join(__dirname, './node_modules/deus-ex-state-machine-portal/app')));
+  app.use(express.static(path.join(__dirname, './node_modules/expresscion-portal/app')));
   app.use(express.static(path.join(__dirname, './public')));
 
   opts.app = app;
@@ -65,8 +65,8 @@ function initApi(opts, cb){
     opts.dbProvider = require(process.env.DB_PROVIDER);
   }
 
-  opts.dbProvider = opts.dbProvider || require('SCXMLD-postgres-database-provider');
-  opts.simulationProvider = opts.simulationProvider || require('SCXMLD-simple-stateless-simulation-provider');
+  opts.dbProvider = opts.dbProvider || require('expresscion-postgres-database-provider');
+  opts.simulationProvider = opts.simulationProvider || require('expresscion-simple-stateless-simulation-provider');
   opts.middlewares = opts.middlewares || [];
 
   process.env.SEND_URL = process.env.SEND_URL || ('http://localhost:' + opts.port + opts.basePath + '/');
