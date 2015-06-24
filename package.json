@@ -23,7 +23,7 @@
     "node": ">= 0.8.x"
   },
   "bin": {
-    "scxmld": "index.js"
+    "expresscion-server": "index.js"
   },
   "dependencies": {
     "async": "^0.9.0",
