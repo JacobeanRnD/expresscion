@@ -11,7 +11,7 @@ REST protocol.
 
 Install PostgreSQL and Redis and set POSTGRES_URL and REDIS_URL in your environment. 
 
-You can clone this [project boilerplate](git@github.com:JacobeanRnD/expresscion-hello-world-node-project.git) and run `npm install`; or follow the instructions. 
+You can clone this [project boilerplate](https://github.com/JacobeanRnD/expresscion-hello-world-node-project) and run `npm install`; or follow the instructions. 
 
 Init a new Node.js project with `npm init`.
 
