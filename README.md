@@ -1,4 +1,4 @@
-![Tests](https://travis-ci.org/JacobeanRnD/expresscion.svg?branch=master)
+[![Tests](https://travis-ci.org/JacobeanRnD/expresscion.svg?branch=master)](https://travis-ci.org/JacobeanRnD/expresscion)
 
 Expresscion is an open, cloud-friendly SCXML orchestration server.
 
