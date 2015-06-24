@@ -110,7 +110,7 @@ function initApi(opts, cb){
 
           var smaasJSON = require('smaas-swagger-spec');
 
-          smaasJSON.host = process.env.SMAAS_HOST_URL || ('localhost' + ':' + opts.port);
+          smaasJSON.host = process.env.HOST || ('localhost' + ':' + opts.port);
           smaasJSON.basePath = opts.basePath;
 
           opts.app.get('/smaas.json', function (req, res) {

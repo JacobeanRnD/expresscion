@@ -41,6 +41,7 @@ heroku git:remote -a my-app
 heroku addons:create heroku-postgresql
 heroku addons:create heroku-redis
 heroku config:set POSTGRES_URL=`heroku config:get DATABASE_URL`
+heroku config:set HOST=my-app.herokuapp.com
 git push heroku master
 ```
 
