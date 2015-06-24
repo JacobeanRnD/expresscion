@@ -46,6 +46,7 @@ function initExpress (opts, cb) {
   app.set('views', path.join(__dirname, './views'));
   app.engine('html', require('ejs').renderFile);
   app.use(express.static(path.join(__dirname, './node_modules/deus-ex-state-machine-portal/app')));
+  app.use(express.static(path.join(__dirname, './public')));
 
   opts.app = app;
 
