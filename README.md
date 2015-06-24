@@ -29,7 +29,7 @@ Add to package.json:
 
 Then run `npm start`, and visit [http://localhost:8002/](http://localhost:8002/) in your web browser.
 
-Optionally, install command-line tools: https://github.com/JacobeanRnD/SCXML-CLI
+Optionally, install command-line tools: https://github.com/JacobeanRnD/smaas-cli
 
 ## Deploy to the cloud
 
