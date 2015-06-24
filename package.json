@@ -35,7 +35,7 @@
     "deus-ex-state-machine-portal": "git://github.com/JacobeanRnD/deus-ex-state-machine-portal#57b1628f4ab83b64a1eb733aa48265d2237ef2c5",
     "ejs": "^2.3.1",
     "express": "^4.12.3",
-    "libxmljs": "0.14.1",
+    "libxmljs": "^0.14.2",
     "morgan": "^1.5.2",
     "redis": "^0.12.1",
     "scxml": "git://github.com/jbeard4/SCION.git#dd6465f58882e85ee2a599de9513662e453be21f",
