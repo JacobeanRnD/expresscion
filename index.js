@@ -79,7 +79,6 @@ function initApi(opts, cb){
     next();
   });
 
-  console.log('here');
   fs.readFile(opts.pathToModel, 'utf8', function (err, scxmlString) {
     if(err) throw err;
 
