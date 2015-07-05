@@ -102,18 +102,10 @@ module.exports = function (model, scxmlString, modelName) {
 
       instanceSubscriptions[instanceId].push(res);
 
-      var listener = {
-        onEntry : function(stateId){
-          res.write('event: onEntry\n');
-          res.write('data: ' + stateId + '\n\n');
-        },
-        onExit : function(stateId){
-          res.write('event: onExit\n');
-          res.write('data: ' + stateId + '\n\n');
-        }
-      };
-
-      instance.registerListener(listener);
+      instance.on('*',function(name, data){
+        res.write('event: ' + name + '\n');
+        res.write('data: ' + data + '\n\n');
+      });
     });
   };
 
