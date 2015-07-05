@@ -41,7 +41,7 @@ module.exports = function (model, scxmlString, modelName) {
   };
 
   api.getInstances = function(req, res) {
-    res.send({ name: 'success.get.instances', data: Object.keys(instances)});
+    res.send({ name: 'success.get.instances', data: {instances : Object.keys(instances)}});
   };
 
   api.getInstance = function(req, res){
