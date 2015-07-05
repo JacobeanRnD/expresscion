@@ -1,13 +1,13 @@
 {
-  "name": "expresscion",
-  "description": "Express.js middleware implementing the state machine as a service (SMaaS) protocol.",
-  "version": "1.0.3",
-  "homepage": "https://github.com/JacobeanRnD/expresscion",
+  "name": "microexpresscion",
+  "description": "Express.js middleware implementing the state machine as a service (SMaaS) protocol, designed to run on devices.",
+  "version": "1.0.0",
+  "homepage": "https://github.com/JacobeanRnD/expresscion/tree/microexpresscion",
   "main": "./index.js",
   "license": "LGPL-3.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/JacobeanRnD/expresscion.git"
+    "url": "https://github.com/JacobeanRnD/expresscion/tree/microexpresscion"
   },
   "author": {
     "name": "Jacob Beard",
@@ -16,14 +16,13 @@
   },
   "scripts": {
     "postinstall": "node node_modules/bower/bin/bower --allow-root install",
-    "test": "cd SCXMLD-tests && npm install && cd .. && ./run_tests.sh",
     "start": "node index.js"
   },
   "engines": {
     "node": ">= 0.8.x"
   },
   "bin": {
-    "expresscion": "index.js"
+    "microexpresscion": "index.js"
   },
   "dependencies": {
     "async": "^0.9.0",
