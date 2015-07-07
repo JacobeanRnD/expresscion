@@ -1,7 +1,7 @@
 {
   "name": "microexpresscion",
   "description": "Express.js middleware implementing the state machine as a service (SMaaS) protocol, designed to run on devices.",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "homepage": "https://github.com/JacobeanRnD/expresscion/tree/microexpresscion",
   "main": "./index.js",
   "license": "LGPL-3.0",
