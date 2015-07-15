@@ -1,7 +1,7 @@
 {
   "name": "expresscion",
   "description": "Express.js middleware implementing the state machine as a service (SMaaS) protocol.",
-  "version": "1.0.3",
+  "version": "1.3.0",
   "homepage": "https://github.com/JacobeanRnD/expresscion",
   "main": "./index.js",
   "license": "LGPL-3.0",
@@ -15,9 +15,7 @@
     "url": "http://github.com/jbeard4"
   },
   "scripts": {
-    "postinstall": "node node_modules/bower/bin/bower --allow-root install",
-    "test": "cd SCXMLD-tests && npm install && cd .. && ./run_tests.sh",
-    "start": "node index.js"
+    "start": "node ./bin/www"
   },
   "engines": {
     "node": ">= 0.8.x"
@@ -26,25 +24,13 @@
     "expresscion": "index.js"
   },
   "dependencies": {
+    "amqp": "^0.2.4",
     "async": "^0.9.0",
-    "bower": "~1.4.1",
-    "cors": "^2.5.3",
-    "debug": "^2.1.3",
-    "ejs": "^2.3.1",
-    "express": "^4.12.3",
-    "expresscion-portal": "^1.0.0",
+    "common-expresscions": "1.3.0",
+    "debug": "^2.2.0",
     "expresscion-postgres-database-provider": "1.0.0",
-    "expresscion-simple-stateless-simulation-provider": "^1.0.1",
-    "libxmljs": "^0.14.2",
-    "morgan": "^1.5.2",
+    "expresscion-simple-stateless-simulation-provider": "1.0.2",
     "redis": "^0.12.1",
-    "scxml": "^2.0.3",
-    "smaas-swagger-spec": "^1.0.1",
-    "underscore": "^1.8.3",
     "uuid": "^2.0.1"
-  },
-  "devDependencies": {
-    "istanbul": "^0.3.13",
-    "jasmine": "^2.2.1"
   }
 }

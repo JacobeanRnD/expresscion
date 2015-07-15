@@ -1,187 +1,250 @@
-#!/usr/bin/env node
 'use strict';
 
-var smaasApi = require('./app/api'),
-  cors = require('cors'),
-  scxml = require('scxml'),
-  fs = require('fs'),
-	validate = require('./app/validate-scxml').validateCreateScxmlRequest;
+var common = require('common-expresscions')
+var uuid = require('uuid');
+var util = require('./util');
+var redis = require('redis');
+var urlModule = require('url');
+var debug = require('debug')('expresscion');
+var simulationProvider = require('expresscion-simple-stateless-simulation-provider');
+var dbProvider = require('expresscion-postgres-database-provider');
 
-//CLI: scxmld statechartName [instanceId]
-//scxmld.initApi({pathToModel : 'index.scxml', instanceId : null || instanceId})
+function initApi(model, scxmlString, modelName, cb) {
 
-function initExpress (opts, cb) {
-  opts = opts || {};
-  opts.port = opts.port || process.env.PORT || 8002;
+  //init redis
+  if (process.env.REDIS_URL) {
+    var rtg = urlModule.parse(process.env.REDIS_URL);
 
-  var express = require('express'),
-  path = require('path'),
-  logger = require('morgan'),
-  app = express();
+    var redisSubscribe = redis.createClient(rtg.port, rtg.hostname);
+    if(rtg.auth) redisSubscribe.auth(rtg.auth.split(':')[1]);
 
-  app.use(logger('dev'));
-  
-  // buffer the body
-  app.use(function(req, res, next) {
-    req.body = '';
-    req.on('data', function(data) {
-      return req.body += data;
-    });
-    return req.on('end', next);
-  });
-  
-  var websiteUrl = 'http://localhost:' + opts.port;
-  
-  if (process.env.WEBSITE_URL) {
-    websiteUrl = process.env.WEBSITE_URL;
   } else {
-    console.log('Missing "WEBSITE_URL" variable.');
+    redisSubscribe = redis.createClient();
   }
 
-  app.use(cors({
-    origin: websiteUrl,
-    exposedHeaders: ['WWW-Authenticate', 'Location', 'X-Configuration']
-  }));
+  var db = dbProvider({modelName :  modelName});
 
-  app.set('views', path.join(__dirname, './views'));
-  app.engine('html', require('ejs').renderFile);
-  app.use(express.static(path.join(__dirname, './node_modules/expresscion-portal/app')));
-  app.use(express.static(path.join(__dirname, './public')));
+  //init the database
+  db.init(function (err) {
+    if(err) return cb(err);
 
-  opts.app = app;
+    var simulation = simulationProvider(db, model, modelName);
 
-  initApi(opts, cb);
-}
+    var api = {};
 
-function initApi(opts, cb){
-  opts = opts || {};
-  opts.port = opts.port || process.env.PORT || 8002;
-  opts.basePath = opts.basePath || '/api/v3';
+    function createInstance(instanceId, done){
+      simulation.createInstance(instanceId, function (err, instanceId) {
+        debug('simulation.createInstance response', instanceId, null);
+        db.saveInstance(modelName, instanceId, null, function (err) {
+          done(err, instanceId);
+        });
+      });
+    }
 
-  if(process.env.SIMULATION_PROVIDER){
-    opts.simulationProvider = require(process.env.SIMULATION_PROVIDER);
-  }
-  if(process.env.DB_PROVIDER){
-    opts.dbProvider = require(process.env.DB_PROVIDER);
-  }
+    api.getStatechartDefinition = function(req, res){
+      res.type('application/scxml+xml').status(200).send(scxmlString);
+    };
 
-  opts.dbProvider = opts.dbProvider || require('expresscion-postgres-database-provider');
-  opts.simulationProvider = opts.simulationProvider || require('expresscion-simple-stateless-simulation-provider');
-  opts.middlewares = opts.middlewares || [];
+    api.createInstance = function(req, res) {
+      api.createNamedInstance(req, res);
+    };
 
-  process.env.SEND_URL = process.env.SEND_URL || ('http://localhost:' + opts.port + opts.basePath + '/');
+    api.createNamedInstance = function(req, res) {
+      db.getInstance(modelName, req.params.InstanceId, function (err, exists) {
+        if(exists) return res.status(409).send({ name: 'error.creating.instance', data: { message: 'InstanceId is already associated with an instance' }});
 
-  if(!opts.app) {
-    return cb(new Error('Missing express app'));
-  }
+        createInstance(req.params.InstanceId, function (err, instanceId) {
+          if (!util.IsOk(err, res)) return;
+          if(err && err.statusCode === 404) return res.status(404).send({ name: 'error.getting.statechart', data: { message: 'Statechart definition not found' }});
 
-  var totalRequestCount = 0;
-  opts.app.use(function (req, res, next) {
-    //We are providing an id to each request and response
-    //So we can unregister "_changes" listeners on stateless servers
-    req.uniqueId = res.uniqueId = totalRequestCount++;
+          res.setHeader('Location', instanceId);
 
-    next();
-  });
+          res.status(201).send({ name: 'success.create.instance', data: { id: instanceId }});
+        });
+      });
+    };
 
-  fs.readFile(opts.pathToModel, 'utf8', function (err, scxmlString) {
-    if(err) throw err;
+    api.getInstances = function(req, res) {
+      db.getInstances(modelName, function (err, instances) {
+        if (!util.IsOk(err, res)) return;
 
-    validate(scxmlString, function(scxmlSchemaErrors) {   
-      if(scxmlSchemaErrors) throw scxmlSchemaErrors;
+        res.send({ name: 'success.get.instances', data: { instances: instances }});
+      });
+    };
 
-      scxml.pathToModel(opts.pathToModel, function(err, model){
+    api.getInstance = function(req, res){
+      var instanceId = util.getInstanceId(req);
 
-        var modelName = process.env.APP_NAME || model.meta.name;
+      db.getInstance(modelName, instanceId, function (err, snapshot) {
+        if (!util.IsOk(err, res)) return;
 
-        console.log('Model initialized', modelName);
+        res.send({ name: 'success.get.instance', data: { instance: { snapshot: snapshot }}});
+      });
+    };
 
-        var db = opts.dbProvider({modelName :  modelName});
+    function sendEvent (instanceId, event, sendOptions, eventUuid, done) {
+      //subscribe
+      redisSubscribe.subscribe('/response/' + eventUuid, function(){
+        simulation.sendEvent(instanceId, event, sendOptions, eventUuid, function (err, conf) {
+          if(err) return done(err);
 
-        db.init(function (err) {
-          if(err) return cb(err);
+          db.saveInstance(modelName, instanceId, conf, function () {
+            if(err) return done(err);
 
-          console.log('Db initialized');
-
-          // Initialize the api
-          var simulation = opts.simulationProvider(db, model, modelName );
-
-          var api = smaasApi( simulation, db, scxmlString, modelName );
-
-          var smaasJSON = require('smaas-swagger-spec');
-
-          smaasJSON.host = process.env.HOST || ('localhost' + ':' + opts.port);
-          smaasJSON.basePath = opts.basePath;
-
-          opts.app.get('/smaas.json', function (req, res) {
-            res.status(200).send(smaasJSON);
-          });
-
-          opts.app.get(smaasJSON.basePath + '/:InstanceId/_viz', api.instanceViz);
-          opts.app.get(smaasJSON.basePath + '/_viz', api.statechartViz);
-
-          function methodNotImplementedMiddleware(req, res){
-            return res.send(501, { message: 'Not implemented' });
-          }
-
-          Object.keys(smaasJSON.paths).forEach(function(endpointPath){
-            var endpoint = smaasJSON.paths[endpointPath];
-            var actualPath = smaasJSON.basePath + endpointPath.replace(/{/g, ':').replace(/}/g, '');
-
-            Object.keys(endpoint).forEach(function(methodName){
-              var method = endpoint[methodName];
-
-              var handler = api[method.operationId] || methodNotImplementedMiddleware;
-              switch(methodName) {
-                case 'get': {
-                  opts.app.get(actualPath, opts.middlewares, handler);
-                  break;
-                }
-                case 'post': {
-                  opts.app.post(actualPath, opts.middlewares, handler);
-                  break;
-                }
-                case 'put': {
-                  opts.app.put(actualPath, opts.middlewares, handler);
-                  break;
-                }
-                case 'delete': {
-                  opts.app.delete(actualPath, opts.middlewares, handler);
-                  break;
-                }
-                default:{
-                  console.log('Unsupported method name:', methodName);
-                }
-              }
+            db.saveEvent(instanceId, {
+              timestamp: new Date(),
+              event: event,
+              snapshot: conf
+            }, function (err) {
+              done(err, conf[0]);
             });
           });
-
-          opts.app.use(function(req, res) {
-            res.status(404).send('Can\'t find ' + req.path);
-          });
-
-          cb(null, opts);
         });
-      });    
+      });
+    }
+
+    var eventQueue = {};
+    var isProcessing = false;
+
+    api.sendEvent = function(req, res) {
+      var instanceId = util.getInstanceId(req),
+          event = req.body;
+
+      // Queue logic:
+      //
+      // push event to queue
+      // start processing
+      //
+      // If process is busy, do nothing
+      // completed process will dequeue the next event
+
+      var queue = eventQueue[instanceId] = eventQueue[instanceId] || [];
+
+      queue.push([event, res]);
+      processEventQueue();
+
+      function processEventQueue () {
+        if(isProcessing || queue.length === 0) return;
+
+        isProcessing = true;
+        var eventUuid = uuid.v1(); //tag him with a uuid
+
+        var tuple = queue.shift();
+
+        var event = tuple[0],
+            res = tuple[1];
+
+        db.getInstance(modelName, instanceId, function (err) {
+          if(err) {
+            isProcessing = false;
+            return res.status(err.statusCode || 500).send(err);
+          }
+
+          var sendOptions = {
+            uri: req.protocol + '://' + req.get('Host') + req.url,
+            method: req.method
+          };
+
+          if(req.headers.authorization) {
+            sendOptions.headers = {
+              Authorization: req.headers.authorization
+            };
+          }
+
+          if(req.cookies) {
+            sendOptions.cookies = req.cookies;
+          }
+
+          pendingResponses[eventUuid] = res;   //save the response
+
+          sendEvent(instanceId, event, sendOptions, eventUuid, function (err) {
+            isProcessing = false;
+
+            if (!util.IsOk(err, res)) return;
+
+            processEventQueue();
+          });
+        });
+      }
+    };
+
+    var pendingResponses = {};
+
+    var responseChannelRegExp = /^\/response\/(.*)$/;
+    redisSubscribe.on('message', function respond(channel, dataStr){
+      //console.log('respond channel, dataStr',arguments);
+      var m = channel.match(responseChannelRegExp);
+      if(!m) throw new Error('Unexpected channel '+channel);
+      var eventUuid = m[1];
+      var res = pendingResponses[eventUuid];
+      if(!res) return;      //this can happen if, for example, 
+                            //the server dies before the response has been released
+                            
+      redisSubscribe.unsubscribe('/response/' + eventUuid);
+      var data = JSON.parse(dataStr);
+      var snapshot = data.snapshot, 
+          customData = data.customData;
+
+      //TODO: provide deeper control over response status code
+      if(snapshot){
+        res.setHeader('X-Configuration',JSON.stringify(snapshot[0]));
+        res.send({ name: 'success.event.sent', data: { snapshot: snapshot[0] }});
+      }else{
+        var statusCode = customData.error ? 500 : 200;
+        res.send(statusCode, customData);
+      }
+      delete pendingResponses[eventUuid];
     });
+
+    function deleteInstance (instanceId, done) {
+      simulation.unregisterAllListeners(instanceId, function () {
+        //Delete event queue for the specific instance
+        eventQueue[instanceId] = [];
+        
+        simulation.deleteInstance(instanceId, function (err) {
+          if(err) return done(err);
+
+          db.deleteInstance(modelName, instanceId, done);
+        });
+      });
+    }
+
+    api.deleteInstance = function(req, res){
+      var instanceId = util.getInstanceId(req);
+
+      simulation.unregisterListener(instanceId, res, function(err){
+        if (!util.IsOk(err, res)) return;
+
+        deleteInstance(instanceId, function (err) {
+          if (!util.IsOk(err, res)) return;
+
+          res.send({ name: 'success.deleting.instance', data: { message: 'Instance deleted successfully.' }});
+        });
+      });
+    };
+
+    api.getInstanceChanges = function(req, res){
+      var instanceId = util.getInstanceId(req);
+
+      simulation.registerListener(instanceId, res, function () {
+        common.sse.initStream(req, res, function(){
+          simulation.unregisterListener(instanceId, res, function(){});
+        });
+      });
+    };
+
+    api.getEventLog = function (req, res) {
+      var instanceId = util.getInstanceId(req);
+
+      db.getEvents(instanceId, function (err, events) {
+        if (!util.IsOk(err, res)) return;
+
+        res.send({ name: 'success.getting.logs', data: { events: events }});
+      });
+    };
+
+    cb(null, api);
   });
-}
+};
 
-if(require.main === module) {
-  var opts = {};
-  opts.pathToModel = process.argv[2] || 'main.scxml';
-
-  initExpress(opts, function (err, opts) {
-    if(err) throw err;
-
-    console.log('Starting server on port:', opts.port);
-    opts.app.listen(opts.port, function () {
-      console.log('Server started');
-    });
-  });
-} else {
-  module.exports = {
-    initApi: initApi,
-    initExpress: initExpress
-  };
-}
+module.exports.initExpress = common.initExpress.bind(this, initApi);

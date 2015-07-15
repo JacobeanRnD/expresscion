@@ -1,6 +1,0 @@
-{
-  "spec_dir": "SCXMLD-tests/spec",
-  "spec_files": [
-    "**/*[sS]pec.js"
-  ]
-}
