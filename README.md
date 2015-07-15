@@ -23,7 +23,7 @@ Add to package.json:
 
 ```
   "scripts": {
-    "start": "node node_modules/expresscion/index.js index.scxml"
+    "start": "node_modules/expresscion/bin/www index.scxml"
   },
 ```
 
