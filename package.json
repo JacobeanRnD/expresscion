@@ -1,7 +1,7 @@
 {
   "name": "expresscion",
   "description": "Express.js middleware implementing the state machine as a service (SMaaS) protocol.",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "homepage": "https://github.com/JacobeanRnD/expresscion",
   "main": "./index.js",
   "license": "LGPL-3.0",
@@ -21,7 +21,7 @@
     "node": ">= 0.8.x"
   },
   "bin": {
-    "expresscion": "index.js"
+    "expresscion": "./bin/www"
   },
   "dependencies": {
     "amqp": "^0.2.4",
