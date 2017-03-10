@@ -29,7 +29,7 @@
     "common-expresscions": "1.6.0",
     "debug": "^2.2.0",
     "expresscion-postgres-database-provider": "1.0.0",
-    "expresscion-simple-stateless-simulation-provider": "1.0.2",
+    "expresscion-simple-stateless-simulation-provider": "1.0.3",
     "redis": "^0.12.1",
     "uuid": "^2.0.1"
   }
